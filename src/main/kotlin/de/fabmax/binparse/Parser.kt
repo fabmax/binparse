@@ -39,6 +39,12 @@ fun main(args: Array<String>) {
     //println(result["flags"])
 }
 
+/**
+ * Parses stuff.
+ *
+ * @sample main
+ *
+ */
 class Parser(source: String) {
 
     val items: List<Item>

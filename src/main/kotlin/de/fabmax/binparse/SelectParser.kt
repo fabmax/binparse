@@ -13,7 +13,7 @@ class SelectParser private constructor(fieldName: String, selector: String, choi
     private val choices = choices;
 
     override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
-        val sel = resultSet[selector] ?: throw NullPointerException("Missing selector field $selector in parse result")
+        val sel = resultSet[selector]
         val parser = choices[sel.getDecimalValue()] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
         val field = parser.parseField(reader, resultSet)

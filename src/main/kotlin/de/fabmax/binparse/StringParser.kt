@@ -19,12 +19,9 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
 
     override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
         val data = when (length.mode) {
-            ArrayParser.LengthMode.FIXED ->
-                reader.readBytes(length.intLength)
-            ArrayParser.LengthMode.BY_FIELD ->
-                reader.readBytes(resultSet[length.strLength]!!.getDecimalValue().toInt())
-            ArrayParser.LengthMode.BY_VALUE ->
-                readNullTerminated(reader, resultSet)
+            ArrayParser.LengthMode.FIXED -> reader.readBytes(length.intLength)
+            ArrayParser.LengthMode.BY_FIELD -> reader.readBytes(resultSet[length.strLength].getDecimalValue().toInt())
+            ArrayParser.LengthMode.BY_VALUE -> readNullTerminated(reader, resultSet)
         }
         return StringField(fieldName, String(data, encoding))
     }

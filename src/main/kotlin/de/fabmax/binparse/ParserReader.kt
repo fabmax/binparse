@@ -11,14 +11,21 @@ class ParserReader(input: InputStream) {
 
     private val input = input
 
+    var pos = 0
+        private set
+
+
+    private var mark = 0
     private var nextByte = 0
     private var remainingBits = 0
 
     fun mark(readLimit: Int = 8) {
+        mark = pos;
         input.mark(readLimit)
     }
 
     fun reset() {
+        pos = mark;
         input.reset()
     }
 
@@ -33,6 +40,7 @@ class ParserReader(input: InputStream) {
 
     @Throws(IOException::class)
     fun readU08(): Int {
+        pos++
         val byte = input.read()
         if (byte == -1) {
             throw IOException("Stream was closed")

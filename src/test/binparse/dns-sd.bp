@@ -13,6 +13,9 @@ label: struct {
     }
 }
 
+#
+# Resource record containing a service description
+#
 resource_srv: struct {
     priority: u16;
     weight: u16;
@@ -20,24 +23,36 @@ resource_srv: struct {
     target: array { type: label { qualifiers: COLLECT; } length: u08; }
 }
 
-question: struct {
-    name: array { type: label { qualifiers: COLLECT; } length: u08; }
-    type: u16;
-    class: u16;
+#
+# Resource record containing a IPv4 address
+#
+resource_a: struct {
+    a0: u08;
+    a1: u08;
+    a2: u08;
+    a3: u08;
 }
 
 resource_rec: struct {
     name: array { type: label { qualifiers: COLLECT; } length: u08; }
     type: u16;
-    class: u16;
+    unique: bit;
+    class: int { bits: 15; }
     ttl: u32;
     len: u16;
     data: select {
         selector: type;
 
+        A:    1 { use: resource_a; }
         SRV: 33 { use: resource_srv; }
         ELSE: * { use: array { type: u08; length: len; } }
     }
+}
+
+question: struct {
+    name: array { type: label { qualifiers: COLLECT; } length: u08; }
+    type: u16;
+    class: u16;
 }
 
 flags: struct {

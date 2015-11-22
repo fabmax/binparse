@@ -27,7 +27,7 @@ class Struct(definition: Item) {
     }
 
     fun parse(reader: ParserReader): ParseResult {
-        val result = ParseResult();
+        val result = ParseResult(name);
 
         //println("[struct $name]")
         for (parser in parserChain) {
@@ -48,7 +48,7 @@ class Struct(definition: Item) {
 
     private inner class StructFieldParser(fieldName: String): FieldParser(fieldName) {
         override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
-            return StructField(fieldName, parse(reader))
+            return parse(reader)
         }
     }
 }

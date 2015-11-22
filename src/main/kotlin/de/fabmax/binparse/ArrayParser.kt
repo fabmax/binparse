@@ -44,10 +44,8 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
 
         } else {
             val length = when (length.mode) {
-                LengthMode.FIXED ->
-                    length.intLength
-                LengthMode.BY_FIELD ->
-                    resultSet[length.strLength]!!.getDecimalValue().toInt()
+                LengthMode.FIXED -> length.intLength
+                LengthMode.BY_FIELD -> resultSet[length.strLength].getDecimalValue().toInt()
                 else -> 0
             }
             for (i in 1..length) {

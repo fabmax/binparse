@@ -1,7 +1,6 @@
 package de.fabmax.binparse
 
 import java.util.*
-import kotlin.reflect.KClass
 
 /**
  * Created by max on 18.11.2015.
@@ -22,14 +21,15 @@ abstract class Field(name: String) {
     }
 
     var name = name
-    val evaluators = ArrayList<FieldEvaluator>()
+    //val evaluators = ArrayList<FieldEvaluator>()
 
     var index = 0
-    var qualifiers: Set<String>? = null;
+    var qualifiers: Set<String>? = null
+    var offset = 0
 
-    fun getEvaluator(clazz: KClass<FieldEvaluator>): FieldEvaluator? {
+    /*fun getEvaluator(clazz: KClass<FieldEvaluator>): FieldEvaluator? {
         return null
-    }
+    }*/
 
     open fun hasQualifier(qualifier: String): Boolean {
         return qualifiers?.contains(qualifier) ?: false
@@ -80,11 +80,25 @@ abstract class Field(name: String) {
     }
 }
 
-class ArrayField(name: String): Field(name) {
-    var values = ArrayList<Field>()
+class ArrayField(name: String, values: ArrayList<Field> = ArrayList<Field>()): Field(name), Iterable<Field> by values {
+    val values = values
+    val length: Int
+        get() = values.size
 
     override fun getValue(): Any {
         return values
+    }
+
+    operator fun get(index: Int): Field {
+        return values[index]
+    }
+
+    fun getArray(index: Int): ArrayField {
+        return values[index] as ArrayField
+    }
+
+    fun getStruct(index: Int): ParseResult {
+        return values[index] as ParseResult
     }
 
     override fun hasQualifier(qualifier: String): Boolean {
@@ -134,33 +148,5 @@ class StringField(name: String, value: String): Field(name) {
 
     override fun getValue(): Any {
         return value
-    }
-}
-
-class StructField(name: String, parseResult: ParseResult): Field(name) {
-    val parseResult = parseResult
-
-    override fun getValue(): Any {
-        return parseResult
-    }
-
-    override fun hasQualifier(qualifier: String): Boolean {
-        if (qualifier != QUAL_COLLECT && super.hasQualifier(QUAL_COLLECT)) {
-            return parseResult.fields.values.find { field -> field.hasQualifier(qualifier) } != null
-        } else {
-            return super.hasQualifier(qualifier)
-        }
-    }
-
-    override fun toString(indent: Int, withFieldName: Boolean): String {
-        val buf = StringBuffer()
-        for (i in 1 .. indent) {
-            buf.append(' ')
-        }
-        if (withFieldName) {
-            buf.append(name).append(" = ")
-        }
-        buf.append(parseResult.toString(indent))
-        return buf.toString()
     }
 }

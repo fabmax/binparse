@@ -12,7 +12,9 @@ abstract class FieldParser(fieldName: String) {
     val qualifiers = HashSet<String>()
 
     fun parseField(reader: ParserReader, resultSet: ParseResult): Field {
+        val offset = reader.pos
         val field = parse(reader, resultSet)
+        field.offset = offset
         if (!qualifiers.isEmpty()) {
             field.qualifiers = HashSet<String>(qualifiers);
         }

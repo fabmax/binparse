@@ -1,5 +1,7 @@
 package de.fabmax.binparse;
 
+import de.fabmax.binparse.examples.DnsMessage;
+
 import java.io.ByteArrayInputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -39,13 +41,14 @@ public class ServiceDiscovery {
 
         while (true) {
             sock.receive(packet);
-            System.out.println("\n\nreceived a packet: " + packet.getLength() + " bytes");
+            //System.out.println("\n\nreceived a packet: " + packet.getLength() + " bytes");
             //System.out.println(new String(packet.getData(), 0, packet.getLength()));
 
             try {
                 ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData());
                 ParseResult result = main.parse(bin);
-                System.out.println(result.toString(0));
+                new DnsMessage(result, packet.getAddress());
+                //System.out.println(result.toString(0, true));
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -65,7 +68,7 @@ public class ServiceDiscovery {
 
     }
 
-    private static void test() {
+    private static void test() throws Exception {
         byte[] buf = new byte[] {
                 (byte) 0x00, (byte) 0x00, (byte) 0x84, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04,
                 (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0a, (byte) 0x66, (byte) 0x61, (byte) 0x72,
@@ -83,13 +86,48 @@ public class ServiceDiscovery {
                 (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0e, (byte) 0x0f, (byte) 0x00, (byte) 0x02,
                 (byte) 0xc0, (byte) 0x0c, };
 
-        Parser parser = Parser.Companion.fromFile("dns-sd.sbp");
+        Parser parser = Parser.Companion.fromFile("src/test/binparse/dns-sd.bp");
         Struct main = parser.getStructs().get("main");
+
+        /*
+        ParseResult result = null;
+        for (int i = 0; i < 10000; i++) {
+            ByteArrayInputStream bin = new ByteArrayInputStream(buf);
+            result = main.parse(bin);
+        }
+
+        long t = System.nanoTime();
+        for (int i = 0; i < 100; i++) {
+            ByteArrayInputStream bin = new ByteArrayInputStream(buf);
+            result = main.parse(bin);
+        }
+        t = System.nanoTime() - t;
+        System.out.printf("parsing took %.3f ms\n", t / 100e6);*/
+
+
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-        System.out.println(main.parse(bin).toString(2));
+        ParseResult result = main.parse(bin);
+        new DnsMessage(result, InetAddress.getLocalHost());
+
+        /*Iterable<Field> flaterator = result::flat;
+        Stream<Field> fields = StreamSupport.stream(flaterator.spliterator(), false);
+        fields.filter(it -> it instanceof StringField).forEach(it -> System.out.println(it.getOffset() + ": " + it.getStringValue()));*/
+
+
+        //System.out.println(result.toString(0, true));
+        /*ArrayField answers = result.getArray("answers");
+        for (int i = 0; i < answers.getLength(); i++) {
+            ParseResult ans = answers.getSruct(i);
+            if (ans.getInt("type") == 33) {
+                ParseResult service = ans.getStruct("data");
+                int port = service.getInt("port");
+                String ip = service.getArray("target").getSruct(0).getString("value.text");
+                System.out.println("found a service: " + ip + ":" + port);
+            }
+        }*/
     }
 
-    private static void testSimple() {
+    private static void testSimple() throws Exception {
         byte[] buf = new byte[] { (byte) 0xc0, 8 };
 
         Parser parser = Parser.Companion.fromFile("test.sbp");
