@@ -1,0 +1,67 @@
+text: struct {
+    len: int { bits: 6; }
+    text: string { encoding: utf-8; length: len; }
+}
+
+label: struct {
+    type: int { bits: 2; }
+    value: select {
+        selector: type;
+
+        TXT: 0 { use: text; }
+        PTR: 3 { use: int { bits: 14; qualifiers: BREAK; } }
+    }
+}
+
+resource_srv: struct {
+    priority: u16;
+    weight: u16;
+    port: u16;
+    target: array { type: label { qualifiers: COLLECT; } length: u08; }
+}
+
+question: struct {
+    name: array { type: label { qualifiers: COLLECT; } length: u08; }
+    type: u16;
+    class: u16;
+}
+
+resource_rec: struct {
+    name: array { type: label { qualifiers: COLLECT; } length: u08; }
+    type: u16;
+    class: u16;
+    ttl: u32;
+    len: u16;
+    data: select {
+        selector: type;
+
+        SRV: 33 { use: resource_srv; }
+        ELSE: * { use: array { type: u08; length: len; } }
+    }
+}
+
+flags: struct {
+    QR: bit;
+    OPCODE: int{ bits: 4;}
+    AA: bit;
+    TC: bit;
+    RD: bit;
+    RA: bit;
+    Z: bit;
+    AD: bit;
+    CD: bit;
+    RCODE: int { bits: 4; }
+}
+
+main: struct {
+    id: u16;
+    flags: flags;
+    num_questions: u16;
+    num_answers: u16;
+    num_authorities: u16;
+    num_additionals: u16;
+    questions: array { type: question; length: num_questions; }
+    answers: array { type: resource_rec; length: num_answers; }
+    authorities: array { type: resource_rec; length: num_authorities; }
+    additionals: array { type: resource_rec; length: num_additionals; }
+}
