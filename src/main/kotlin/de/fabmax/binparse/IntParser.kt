@@ -20,7 +20,7 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
         return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
     }
 
-    override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
+    override fun parse(reader: BinReader, result: StructInstance): Field {
         try {
             var value = reader.readBits(bits);
             if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {

@@ -11,12 +11,14 @@ abstract class Field(name: String) {
     companion object {
         val QUAL_BREAK = "BREAK";
         val QUAL_COLLECT = "COLLECT";
+        val QUAL_SIZE = "SIZE";
 
         val QUALIFIERS = HashSet<String>()
 
         init {
             QUALIFIERS.add(QUAL_BREAK)
             QUALIFIERS.add(QUAL_COLLECT)
+            QUALIFIERS.add(QUAL_SIZE)
         }
     }
 
@@ -97,8 +99,8 @@ class ArrayField(name: String, values: ArrayList<Field> = ArrayList<Field>()): F
         return values[index] as ArrayField
     }
 
-    fun getStruct(index: Int): ParseResult {
-        return values[index] as ParseResult
+    fun getStruct(index: Int): StructInstance {
+        return values[index] as StructInstance
     }
 
     override fun hasQualifier(qualifier: String): Boolean {

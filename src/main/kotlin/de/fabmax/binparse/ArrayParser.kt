@@ -26,18 +26,18 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return "$fieldName: ArrayParser: type: $type, length-mode: $length"
     }
 
-    override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
+    override fun parse(reader: BinReader, result: StructInstance): Field {
         val field = ArrayField(fieldName)
 
         if (length.mode == LengthMode.BY_VALUE) {
             while (length.termParser != null) {
                 reader.mark()
-                if (length.termParser.parseField(reader, resultSet).getDecimalValue() == 0L) {
+                if (length.termParser.parseField(reader, result).getDecimalValue() == 0L) {
                     break
                 }
                 reader.reset()
 
-                if (parseItem(field, reader, resultSet)) {
+                if (parseItem(field, reader, result)) {
                     break
                 }
             }
@@ -45,11 +45,11 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         } else {
             val length = when (length.mode) {
                 LengthMode.FIXED -> length.intLength
-                LengthMode.BY_FIELD -> resultSet[length.strLength].getDecimalValue().toInt()
+                LengthMode.BY_FIELD -> result[length.strLength].getDecimalValue().toInt()
                 else -> 0
             }
             for (i in 1..length) {
-                if (parseItem(field, reader, resultSet)) {
+                if (parseItem(field, reader, result)) {
                     break
                 }
             }
@@ -57,7 +57,7 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return field
     }
 
-    private fun parseItem(field: ArrayField, reader: ParserReader, resultSet: ParseResult): Boolean {
+    private fun parseItem(field: ArrayField, reader: BinReader, resultSet: StructInstance): Boolean {
         val item = type.parseField(reader, resultSet)
         item.index = field.values.size
         field.values.add(item)

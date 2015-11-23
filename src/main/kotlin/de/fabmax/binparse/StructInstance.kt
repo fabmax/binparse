@@ -6,7 +6,7 @@ import java.util.*
  * Created by max on 18.11.2015.
  */
 
-class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<String, Field>()) :
+class StructInstance(structName: String, fields: HashMap<String, Field> = HashMap<String, Field>()) :
         Field(structName), Iterable<Field> by fields.values {
 
     val fields = fields
@@ -24,8 +24,8 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
     }
 
     @Throws(NoSuchFieldException::class)
-    fun getStruct(name: String): ParseResult {
-        return get(name) as ParseResult
+    fun getStruct(name: String): StructInstance {
+        return get(name) as StructInstance
     }
 
     @Throws(NoSuchFieldException::class)
@@ -53,7 +53,7 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
         var fName = path.next()
         var field = fields[fName] ?: throw NoSuchFieldException("No such field: $fName")
         for (cName in path) {
-            if (field is ParseResult) {
+            if (field is StructInstance) {
                 field = field[cName]
                 fName = cName
             } else {
@@ -123,7 +123,7 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
 
             val field = stack.peek().next()
 
-            if (field is ParseResult) {
+            if (field is StructInstance) {
                 stack.push(field.iterator())
             } else if (field is ArrayField) {
                 stack.push(field.iterator())

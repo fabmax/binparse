@@ -1,7 +1,7 @@
 package de.fabmax.binparse.examples
 
 import de.fabmax.binparse.ArrayField
-import de.fabmax.binparse.ParseResult
+import de.fabmax.binparse.StructInstance
 import de.fabmax.binparse.StringField
 import java.net.InetAddress
 import java.util.*
@@ -10,7 +10,7 @@ import java.util.*
  * Created by max on 22.11.2015.
  */
 
-class DnsMessage(parsed: ParseResult, from: InetAddress) {
+class DnsMessage(parsed: StructInstance, from: InetAddress) {
 
     companion object {
         val TYPE_A = 1
@@ -70,8 +70,8 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
 
     private fun buildQuestions() {
         parsed.getArray("questions")
-                .filter { it is ParseResult }
-                .map { it as ParseResult }
+                .filter { it is StructInstance }
+                .map { it as StructInstance }
                 .forEach {
                     val question = Question(it)
                     questions.put(question.name, question)
@@ -80,8 +80,8 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
 
     private fun buildAnswers() {
         parsed.getArray("answers")
-                .filter { it is ParseResult }
-                .map { it as ParseResult }
+                .filter { it is StructInstance }
+                .map { it as StructInstance }
                 .forEach {
                     val answer = ResourceRec(it)
                     answers.put(answer.type, answer)
@@ -101,7 +101,7 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
         return name.toString()
     }
 
-    inner class Question(parsed: ParseResult) {
+    inner class Question(parsed: StructInstance) {
         val name: String
         val type: Int
         val clazz: Int
@@ -117,7 +117,7 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
         }
     }
 
-    inner class ResourceRec(parsed: ParseResult) {
+    inner class ResourceRec(parsed: StructInstance) {
 
         val name: String
         val type: Int
