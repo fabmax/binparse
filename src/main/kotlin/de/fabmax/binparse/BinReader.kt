@@ -7,7 +7,7 @@ import java.io.InputStream
  * Created by max on 18.11.2015.
  */
 
-class ParserReader(input: InputStream) {
+class BinReader(input: InputStream) {
 
     private val input = input
 

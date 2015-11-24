@@ -12,7 +12,7 @@ abstract class FieldEvaluatorFactory {
         val evaluatorFactories = HashMap<String, FieldEvaluatorFactory>()
 
         init {
-            evaluatorFactories.put("mask", MaskEvaluator.Factory())
+            //evaluatorFactories.put("mask", MaskEvaluator.Factory())
         }
 
         fun createEvaluator(definition: Item): FieldEvaluator {

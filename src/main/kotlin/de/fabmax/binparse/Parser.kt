@@ -48,13 +48,13 @@ fun main(args: Array<String>) {
 class Parser(source: String) {
 
     val items: List<Item>
-    val structs = HashMap<String, Struct>()
+    val structs = HashMap<String, StructDef>()
 
     init {
         items = parseBlock(source)
         for (item in items) {
             if (item.value == "struct") {
-                structs.put(item.identifier, Struct(item))
+                structs.put(item.identifier, StructDef(item))
             }
         }
         //items.forEach { println(it.prettyPrint()) }

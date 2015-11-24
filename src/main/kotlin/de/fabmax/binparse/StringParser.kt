@@ -17,21 +17,21 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
         return "$fieldName: StringParser: encoding: $encoding, length: $length"
     }
 
-    override fun parse(reader: ParserReader, resultSet: ParseResult): Field {
+    override fun parse(reader: BinReader, result: StructInstance): StringField {
         val data = when (length.mode) {
             ArrayParser.LengthMode.FIXED -> reader.readBytes(length.intLength)
-            ArrayParser.LengthMode.BY_FIELD -> reader.readBytes(resultSet[length.strLength].getDecimalValue().toInt())
-            ArrayParser.LengthMode.BY_VALUE -> readNullTerminated(reader, resultSet)
+            ArrayParser.LengthMode.BY_FIELD -> reader.readBytes(result[length.strLength].getIntValue().toInt())
+            ArrayParser.LengthMode.BY_VALUE -> readNullTerminated(reader, result)
         }
         return StringField(fieldName, String(data, encoding))
     }
 
-    fun readNullTerminated(reader: ParserReader, resultSet: ParseResult): ByteArray {
+    fun readNullTerminated(reader: BinReader, resultSet: StructInstance): ByteArray {
         // fixme: this doesn't really work for UTF-16
         val bytes = ArrayList<Byte>()
         while (length.termParser != null) {
             reader.mark()
-            if (length.termParser.parseField(reader, resultSet).getDecimalValue() == 0L) {
+            if (length.termParser.parseField(reader, resultSet).getIntValue() == 0L) {
                 break
             }
             reader.reset()
@@ -56,5 +56,11 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
                 throw IllegalArgumentException("Unsupported encoding: $encoding")
             }
         }
+    }
+}
+
+class StringField(name: String, value: String): Field<String>(name, value) {
+    override fun getStringValue(): String {
+        return value;
     }
 }

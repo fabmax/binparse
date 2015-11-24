@@ -6,16 +6,14 @@ import java.util.*
  * Created by max on 18.11.2015.
  */
 
-class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<String, Field>()) :
-        Field(structName), Iterable<Field> by fields.values {
+class StructInstance(structName: String, fields: HashMap<String, Field<*>> = HashMap<String, Field<*>>()) :
+        Field<HashMap<String, Field<*>>>(structName, fields), Iterable<Field<*>> by fields.values {
 
-    val fields = fields
-
-    fun put(field: Field) {
-        if (fields.containsKey(field.name)) {
+    fun put(field: Field<*>) {
+        if (value.containsKey(field.name)) {
             throw IllegalArgumentException("ParseResult already contains a field with name " + field.name)
         }
-        fields.put(field.name, field)
+        value.put(field.name, field)
     }
 
     @Throws(NoSuchFieldException::class)
@@ -24,13 +22,13 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
     }
 
     @Throws(NoSuchFieldException::class)
-    fun getStruct(name: String): ParseResult {
-        return get(name) as ParseResult
+    fun getStruct(name: String): StructInstance {
+        return get(name) as StructInstance
     }
 
     @Throws(NoSuchFieldException::class)
     fun getLong(name: String): Long {
-        return get(name).getDecimalValue()
+        return get(name).getIntValue()
     }
 
     @Throws(NoSuchFieldException::class)
@@ -43,17 +41,17 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
         return get(name).getStringValue()
     }
 
-    fun flat(): Iterator<Field> {
+    fun flat(): Iterator<Field<*>> {
         return Flaterator(iterator())
     }
 
     @Throws(NoSuchFieldException::class)
-    operator fun get(name: String): Field {
+    operator fun get(name: String): Field<*> {
         val path = name.splitToSequence('.').iterator()
         var fName = path.next()
-        var field = fields[fName] ?: throw NoSuchFieldException("No such field: $fName")
+        var field = value[fName] ?: throw NoSuchFieldException("No such field: $fName")
         for (cName in path) {
-            if (field is ParseResult) {
+            if (field is StructInstance) {
                 field = field[cName]
                 fName = cName
             } else {
@@ -63,13 +61,9 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
         return field
     }
 
-    override fun getValue(): Any {
-        return fields
-    }
-
     override fun hasQualifier(qualifier: String): Boolean {
         if (qualifier != QUAL_COLLECT && super.hasQualifier(QUAL_COLLECT)) {
-            return fields.values.find { field -> field.hasQualifier(qualifier) } != null
+            return value.values.find { it.hasQualifier(qualifier) } != null
         } else {
             return super.hasQualifier(qualifier)
         }
@@ -78,8 +72,7 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
     override fun toString(): String {
         val buf = StringBuilder()
         buf.append("{ ")
-        fields.values.sortedBy { field -> field.index }
-                .forEach { field -> buf.append(field.name).append(" = ").append(field).append("; ") }
+        value.values.sortedBy { it.index }.forEach { buf.append(it.name).append(" = ").append(it).append("; ") }
         buf.append("}")
         return buf.toString()
     }
@@ -95,15 +88,14 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
         }
 
         buf.append("{\n")
-        fields.values.sortedBy { field -> field.index }
-                .forEach { field -> buf.append(field.toString(indent + 2)).append('\n') }
+        value.values.sortedBy { it.index }.forEach { buf.append(it.toString(indent + 2)).append('\n') }
         buf.append(ind).append('}')
 
         return buf.toString()
     }
 
-    private class Flaterator(structIt: Iterator<Field>) : Iterator<Field> {
-        val stack = Stack<Iterator<Field>>()
+    private class Flaterator(structIt: Iterator<Field<*>>) : Iterator<Field<*>> {
+        val stack = Stack<Iterator<Field<*>>>()
 
         init {
             stack.push(structIt);
@@ -116,14 +108,14 @@ class ParseResult(structName: String, fields: HashMap<String, Field> = HashMap<S
             return !stack.isEmpty()
         }
 
-        override fun next(): Field {
+        override fun next(): Field<*> {
             if (!hasNext()) {
                 throw NoSuchElementException("No more fields")
             }
 
             val field = stack.peek().next()
 
-            if (field is ParseResult) {
+            if (field is StructInstance) {
                 stack.push(field.iterator())
             } else if (field is ArrayField) {
                 stack.push(field.iterator())

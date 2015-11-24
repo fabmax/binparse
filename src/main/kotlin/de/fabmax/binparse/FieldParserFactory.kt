@@ -62,8 +62,14 @@ abstract class FieldParserFactory {
         private fun addQualifiers(definition: Item, parser: FieldParser) {
             val qualifiers = definition.childrenMap["qualifiers"] ?: return
 
-            qualifiers.value.splitToSequence('|').filter { q -> Field.QUALIFIERS.contains(q) }
-                    .forEach { q -> parser.qualifiers.add(q.trim()) }
+            qualifiers.value.splitToSequence('|').forEach {
+                val q = it.trim()
+                if (Field.QUALIFIERS.contains(q)) {
+                    parser.qualifiers.add(q)
+                } else {
+                    throw IllegalArgumentException("Invalid / unknown qualifier: $q")
+                }
+            }
         }
     }
 
