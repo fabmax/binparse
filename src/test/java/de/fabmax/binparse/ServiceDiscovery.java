@@ -13,8 +13,8 @@ import java.net.MulticastSocket;
 public class ServiceDiscovery {
 
     public static void main(String[] args) throws Exception {
-        //test();
-        testLive();
+        test();
+        //testLive();
         //testSimple();
     }
 
@@ -37,7 +37,7 @@ public class ServiceDiscovery {
         DatagramPacket packet = new DatagramPacket(new byte[1500], 1500);
 
         Parser parser = Parser.Companion.fromFile("src/test/binparse/dns.bp");
-        Struct main = parser.getStructs().get("main");
+        StructDef main = parser.getStructs().get("main");
 
         while (true) {
             sock.receive(packet);
@@ -46,7 +46,7 @@ public class ServiceDiscovery {
 
             try {
                 ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData());
-                ParseResult result = main.parse(bin);
+                StructInstance result = main.parse(bin);
                 new DnsMessage(result, packet.getAddress());
                 //System.out.println(result.toString(0, true));
 
@@ -87,7 +87,7 @@ public class ServiceDiscovery {
                 (byte) 0xc0, (byte) 0x0c, };
 
         Parser parser = Parser.Companion.fromFile("src/test/binparse/dns.bp");
-        Struct main = parser.getStructs().get("main");
+        StructDef main = parser.getStructs().get("main");
 
         /*
         ParseResult result = null;
@@ -106,7 +106,7 @@ public class ServiceDiscovery {
 
 
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-        ParseResult result = main.parse(bin);
+        StructInstance result = main.parse(bin);
         new DnsMessage(result, InetAddress.getLocalHost());
 
         /*Iterable<Field> flaterator = result::flat;
@@ -131,9 +131,9 @@ public class ServiceDiscovery {
         byte[] buf = new byte[] { (byte) 0xc0, 8 };
 
         Parser parser = Parser.Companion.fromFile("test.sbp");
-        Struct main = parser.getStructs().get("main");
+        StructDef main = parser.getStructs().get("main");
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-        ParseResult result = main.parse(bin);
+        StructInstance result = main.parse(bin);
 
         Field value = result.get("val");
         System.out.println(value.getClass());

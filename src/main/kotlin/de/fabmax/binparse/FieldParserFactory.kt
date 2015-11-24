@@ -60,7 +60,7 @@ abstract class FieldParserFactory {
         }
 
         private fun addQualifiers(definition: Item, parser: FieldParser) {
-            val qualifiers = definition.childrenMap["qualifiers"] ?: return
+            val qualifiers = definition.childrenMap["_qualifiers"] ?: return
 
             qualifiers.value.splitToSequence('|').forEach {
                 val q = it.trim()

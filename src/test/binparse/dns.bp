@@ -15,7 +15,7 @@ label: struct {
         selector: type;
 
         TXT: 0 { use: text; }
-        PTR: 3 { use: int { bits: 14; qualifiers: BREAK; } }
+        PTR: 3 { use: int { bits: 14; _qualifiers: BREAK; } }
     }
 }
 
@@ -36,7 +36,7 @@ resource_a: struct {
 #
 resource_ptr: struct {
     len: u16;
-    ptrdname: array { type: label { qualifiers: COLLECT; } length: u08; }
+    ptrdname: array { type: label { _qualifiers: COLLECT; } length: u08; }
 }
 
 #
@@ -47,7 +47,7 @@ resource_srv: struct {
     priority: u16;
     weight: u16;
     port: u16;
-    target: array { type: label { qualifiers: COLLECT; } length: u08; }
+    target: array { type: label { _qualifiers: COLLECT; } length: u08; }
 }
 
 #
@@ -62,7 +62,7 @@ resource_else: struct {
 # Resource Record. This struct is used in the [answers], [authorities] and [additionals] sections of the main message.
 #
 resource_rec: struct {
-    name: array { type: label { qualifiers: COLLECT; } length: u08; }
+    name: array { type: label { _qualifiers: COLLECT; } length: u08; }
     type: u16;
     unique: bit;
     class: int { bits: 15; }
@@ -81,7 +81,7 @@ resource_rec: struct {
 # Question. This struct is used in the [questions] section of the main message.
 #
 question: struct {
-    name: array { type: label { qualifiers: COLLECT; } length: u08; }
+    name: array { type: label { _qualifiers: COLLECT; } length: u08; }
     type: u16;
     class: u16;
 }
@@ -108,10 +108,10 @@ flags: struct {
 main: struct {
     id: u16;
     flags: flags;
-    num_questions: u16;
-    num_answers: u16;
-    num_authorities: u16;
-    num_additionals: u16;
+    num_questions: u16 { _qualifiers: SIZE; }
+    num_answers: u16 { _qualifiers: SIZE; }
+    num_authorities: u16 { _qualifiers: SIZE; }
+    num_additionals: u16 { _qualifiers: SIZE; }
     questions: array { type: question; length: num_questions; }
     answers: array { type: resource_rec; length: num_answers; }
     authorities: array { type: resource_rec; length: num_authorities; }

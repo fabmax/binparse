@@ -12,17 +12,6 @@ import kotlin.text.Regex
  */
 
 fun main(args: Array<String>) {
-    //Parser("main: struct {some_val: int { bits: 4; } some_ival: int{ bits: 6; signedness: SIGNED; } bla: i32;" +
-    //        "body:select{selector:some_val;val_a:0 {use:nop;}val_b:1{use:u16;}val_c:2{use:i32;}blub:*{use:u64;}}}")
-//    val parser = Parser("text: struct {" +
-//            "type: int { bits: 2;}" +
-//            "len: int { bits: 6;} text: string {encoding: utf-8; length:len;}" +
-//            "}" +
-//            "flags: struct { QR: bit;OPCODE:int{bits:4;}AA:bit;TC:bit;RD:bit;RA:bit;Z:bit;AD:bit;CD:bit;RCODE:int{bits:4;}}" +
-//            "main: struct { id: u16; flags: flags; num_questions: u16; num_answers: u16; " +
-//            "num_authorities: u16; num_additionals: u16;" +
-//            "domain: array { type: text; length: u08;}}");
-
     val parser = Parser.fromFile("dns-sd.sbp")
 
     val input = ByteArrayInputStream(byteArrayOf(
@@ -141,7 +130,7 @@ class Parser(source: String) {
     }
 
     private fun hasValidIdentifier(block: String): Boolean {
-        return block.matches(Regex("[A-Za-z][A-Za-z0-9_]*\\s*:.*[;{].*"));
+        return block.matches(Regex("[A-Za-z0-9_]*\\s*:.*[;{].*"));
     }
 }
 

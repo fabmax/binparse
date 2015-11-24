@@ -21,6 +21,7 @@ abstract class FieldParser(fieldName: String) {
         return field
     }
 
-    abstract fun parse(reader: BinReader, result: StructInstance): Field<*>
+    abstract fun matchesDef(field: Field<*>, parent: StructInstance): Boolean;
 
+    abstract fun parse(reader: BinReader, result: StructInstance): Field<*>
 }

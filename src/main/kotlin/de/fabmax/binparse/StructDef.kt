@@ -20,7 +20,7 @@ class StructDef(definition: Item) {
         definition.forEach { f -> parserChain.add(FieldParserFactory.createParser(f)) }
 
         // register this struct as a type
-        FieldParserFactory.addParserFactory(name, ParserFactory())
+        FieldParserFactory.addParserFactory(name, ParserFactory(this))
     }
 
     fun parse(input: InputStream): StructInstance {
@@ -30,23 +30,40 @@ class StructDef(definition: Item) {
     fun parse(reader: BinReader): StructInstance {
         val result = StructInstance(name);
         for (parser in parserChain) {
-            val field = parser.parseField(reader, result);
-            field.index = result.value.size;
-            result.put(field)
+            result.put(parser.parseField(reader, result))
         }
         return result
     }
 
-    private inner class ParserFactory(): FieldParserFactory() {
+    fun matchesDef(struct: StructInstance): Boolean {
+        for (parser in parserChain) {
+            if (parser.fieldName !in struct) {
+                return false
+            } else {
+                return parser.matchesDef(struct[parser.fieldName], struct)
+            }
+        }
+        return parserChain.find { it.fieldName !in struct } == null
+    }
+
+    private inner class ParserFactory(val def: StructDef): FieldParserFactory() {
         override fun createParser(definition: Item): FieldParser {
             if (definition.value != name) {
                 throw IllegalArgumentException("Invalid def type: " + definition.value + " != $name")
             }
-            return StructFieldParser(definition.identifier)
+            return StructFieldParser(definition.identifier, def)
         }
     }
 
-    private inner class StructFieldParser(fieldName: String): FieldParser(fieldName) {
+    private inner class StructFieldParser(fieldName: String, val def: StructDef): FieldParser(fieldName) {
+        override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+            if (field is StructInstance) {
+                return def.matchesDef(field)
+            } else {
+                return false
+            }
+        }
+
         override fun parse(reader: BinReader, result: StructInstance): StructInstance {
             return parse(reader)
         }

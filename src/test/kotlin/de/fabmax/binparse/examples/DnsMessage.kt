@@ -1,8 +1,8 @@
 package de.fabmax.binparse.examples
 
 import de.fabmax.binparse.ArrayField
-import de.fabmax.binparse.ParseResult
 import de.fabmax.binparse.StringField
+import de.fabmax.binparse.StructInstance
 import java.net.InetAddress
 import java.util.*
 
@@ -10,7 +10,7 @@ import java.util.*
  * Created by max on 22.11.2015.
  */
 
-class DnsMessage(parsed: ParseResult, from: InetAddress) {
+class DnsMessage(parsed: StructInstance, from: InetAddress) {
 
     companion object {
         val TYPE_A = 1
@@ -71,22 +71,22 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
     }
 
     private fun buildQuestions() {
-        parsed.getArray("questions").map { it as ParseResult }.forEach {
+        parsed.getArray("questions").map { it as StructInstance }.forEach {
             val question = Question(it)
             questions.put(question.name, question)
         }
     }
 
     private fun buildResourceRecs() {
-        parsed.getArray("answers").map { it as ParseResult }.forEach {
+        parsed.getArray("answers").map { it as StructInstance }.forEach {
             val rec = ResourceRec(it)
             answers.put(rec.type, rec)
         }
-        parsed.getArray("authorities").map { it as ParseResult }.forEach {
+        parsed.getArray("authorities").map { it as StructInstance }.forEach {
             val rec = ResourceRec(it)
             authorities.put(rec.type, rec)
         }
-        parsed.getArray("additionals").map { it as ParseResult }.forEach {
+        parsed.getArray("additionals").map { it as StructInstance }.forEach {
             val rec = ResourceRec(it)
             additionals.put(rec.type, rec)
         }
@@ -105,7 +105,7 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
         return name.toString()
     }
 
-    inner class Question(parsed: ParseResult) {
+    inner class Question(parsed: StructInstance) {
         val name: String
         val type: Int
         val clazz: Int
@@ -121,7 +121,7 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
         }
     }
 
-    inner class ResourceRec(parsed: ParseResult) {
+    inner class ResourceRec(parsed: StructInstance) {
 
         val name: String
         val type: Int

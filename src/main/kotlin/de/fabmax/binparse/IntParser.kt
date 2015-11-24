@@ -20,6 +20,10 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
         return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
     }
 
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        return field is IntField
+    }
+
     override fun parse(reader: BinReader, result: StructInstance): IntField {
         try {
             var value = reader.readBits(bits);
@@ -73,5 +77,9 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
 class IntField(name: String, value: Long): Field<Long>(name, value) {
     override fun getIntValue(): Long {
         return value
+    }
+
+    operator fun Long.unaryPlus() {
+        value = this
     }
 }

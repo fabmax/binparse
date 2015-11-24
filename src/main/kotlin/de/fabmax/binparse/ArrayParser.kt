@@ -28,6 +28,18 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return "$fieldName: ArrayParser: type: $type, length-mode: $length"
     }
 
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        if (field is ArrayField) {
+            if (field.find { !type.matchesDef(it, parent) } != null) {
+                return false
+            } else {
+                return true
+            }
+        } else {
+            return false
+        }
+    }
+
     override fun parse(reader: BinReader, result: StructInstance): ArrayField {
         val field = ArrayField(fieldName)
 
@@ -66,7 +78,7 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return item.hasQualifier(Field.QUAL_BREAK)
     }
 
-    open internal class Factory() : FieldParserFactory() {
+    internal open class Factory() : FieldParserFactory() {
         override fun createParser(definition: Item): FieldParser {
             return ArrayParser(definition.identifier, parseType(definition), parseLength(definition))
         }
@@ -111,6 +123,18 @@ class ArrayField(name: String, items: ArrayList<Field<*>> = ArrayList<Field<*>>(
         return value[index] as ArrayField
     }
 
+    fun getInt(index: Int): Int {
+        return getLong(index).toInt()
+    }
+
+    fun getLong(index: Int): Long {
+        return value[index].getIntValue()
+    }
+
+    fun getString(index: Int): String {
+        return value[index].getStringValue()
+    }
+
     fun getStruct(index: Int): StructInstance {
         return value[index] as StructInstance
     }
@@ -142,5 +166,43 @@ class ArrayField(name: String, items: ArrayList<Field<*>> = ArrayList<Field<*>>(
             buf.append(ind).append("]")
         }
         return buf.toString()
+    }
+
+    operator fun Array<Int>.unaryPlus() {
+        value.clear()
+        var i = 0
+        for (int in this) {
+            value.add(IntField("[{$i++}]", int.toLong()))
+        }
+    }
+
+    operator fun Array<Long>.unaryPlus() {
+        value.clear()
+        var i = 0
+        for (long in this) {
+            value.add(IntField("[{$i++}]", long))
+        }
+    }
+
+    operator fun Array<String>.unaryPlus() {
+        value.clear()
+        var i = 0
+        for (str in this) {
+            value.add(StringField("[{$i++}]", str))
+        }
+    }
+
+    operator fun Array<StructInstance>.unaryPlus() {
+        value.clear()
+        for (struct in this) {
+            value.add(struct)
+        }
+    }
+
+    operator fun Array<Field<*>>.unaryPlus() {
+        value.clear()
+        for (field in this) {
+            value.add(field)
+        }
     }
 }

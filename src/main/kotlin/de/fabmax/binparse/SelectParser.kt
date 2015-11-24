@@ -12,6 +12,12 @@ class SelectParser private constructor(fieldName: String, selector: String, choi
     private val selector = selector;
     private val choices = choices;
 
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        val sel = parent[selector]
+        val parser = choices[sel.getIntValue()] ?: choices[null] ?: return false
+        return parser.matchesDef(field, parent)
+    }
+
     override fun parse(reader: BinReader, result: StructInstance): Field<*> {
         val sel = result[selector]
         val parser = choices[sel.getIntValue()] ?: choices[null] ?:

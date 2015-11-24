@@ -17,6 +17,10 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
         return "$fieldName: StringParser: encoding: $encoding, length: $length"
     }
 
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        return field is StringField
+    }
+
     override fun parse(reader: BinReader, result: StructInstance): StringField {
         val data = when (length.mode) {
             ArrayParser.LengthMode.FIXED -> reader.readBytes(length.intLength)
@@ -62,5 +66,9 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
 class StringField(name: String, value: String): Field<String>(name, value) {
     override fun getStringValue(): String {
         return value;
+    }
+
+    operator fun String.unaryPlus() {
+        value = this
     }
 }

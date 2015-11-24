@@ -35,5 +35,5 @@ fun main(args: Array<String>) {
         array("additionals") { }
     }
 
-    println(msgDef.isInstance(instance))
+    println(msgDef.matchesDef(instance))
 }

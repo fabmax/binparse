@@ -10,39 +10,11 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
         Field<HashMap<String, Field<*>>>(structName, fields), Iterable<Field<*>> by fields.values {
 
     fun put(field: Field<*>) {
-        if (value.containsKey(field.name)) {
-            throw IllegalArgumentException("ParseResult already contains a field with name " + field.name)
-        }
-        value.put(field.name, field)
+        +field
     }
 
-    @Throws(NoSuchFieldException::class)
-    fun getArray(name: String): ArrayField {
-        return get(name) as ArrayField
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getStruct(name: String): StructInstance {
-        return get(name) as StructInstance
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getLong(name: String): Long {
-        return get(name).getIntValue()
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getInt(name: String): Int {
-        return getLong(name).toInt()
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getString(name: String): String {
-        return get(name).getStringValue()
-    }
-
-    fun flat(): Iterator<Field<*>> {
-        return Flaterator(iterator())
+    operator fun contains(key: String): Boolean {
+        return value.containsKey(key)
     }
 
     @Throws(NoSuchFieldException::class)
@@ -59,6 +31,35 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
             }
         }
         return field
+    }
+
+    @Throws(NoSuchFieldException::class)
+    fun getArray(name: String): ArrayField {
+        return get(name) as ArrayField
+    }
+
+    @Throws(NoSuchFieldException::class)
+    fun getInt(name: String): Int {
+        return getLong(name).toInt()
+    }
+
+    @Throws(NoSuchFieldException::class)
+    fun getLong(name: String): Long {
+        return get(name).getIntValue()
+    }
+
+    @Throws(NoSuchFieldException::class)
+    fun getString(name: String): String {
+        return get(name).getStringValue()
+    }
+
+    @Throws(NoSuchFieldException::class)
+    fun getStruct(name: String): StructInstance {
+        return get(name) as StructInstance
+    }
+
+    fun flat(): Iterator<Field<*>> {
+        return Flaterator(iterator())
     }
 
     override fun hasQualifier(qualifier: String): Boolean {
@@ -114,7 +115,6 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
             }
 
             val field = stack.peek().next()
-
             if (field is StructInstance) {
                 stack.push(field.iterator())
             } else if (field is ArrayField) {
@@ -123,4 +123,31 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
             return field
         }
     }
+
+    operator fun Field<*>.unaryPlus() {
+        if (this@StructInstance.value.containsKey(name)) {
+            throw IllegalArgumentException("ParseResult already contains a field with name " + name)
+        }
+        index = this@StructInstance.value.size
+        this@StructInstance.value.put(name, this)
+    }
+
+    protected fun <F : Field<*>> initField(field: F, init: F.() -> Unit): F {
+        field.init()
+        if (this is StructInstance) {
+            put(field)
+        }
+        return field
+    }
+
+    fun array(name: String, init: ArrayField.() -> Unit) = initField(ArrayField(name), init)
+    fun int(name: String, init: IntField.() -> Unit) = initField(IntField(name, 0), init)
+    fun string(name: String, init: StringField.() -> Unit) = initField(StringField(name, ""), init)
+    fun struct(name: String, init: StructInstance.() -> Unit) = initField(StructInstance(name), init)
+}
+
+fun struct(name: String = "anonymous_struct", init: StructInstance.() -> Unit): StructInstance {
+    val struct = StructInstance(name)
+    struct.init()
+    return struct
 }
