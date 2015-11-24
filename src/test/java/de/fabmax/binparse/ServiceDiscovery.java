@@ -36,7 +36,7 @@ public class ServiceDiscovery {
 
         DatagramPacket packet = new DatagramPacket(new byte[1500], 1500);
 
-        Parser parser = Parser.Companion.fromFile("src/test/binparse/dns-sd.bp");
+        Parser parser = Parser.Companion.fromFile("src/test/binparse/dns.bp");
         Struct main = parser.getStructs().get("main");
 
         while (true) {
@@ -86,7 +86,7 @@ public class ServiceDiscovery {
                 (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0e, (byte) 0x0f, (byte) 0x00, (byte) 0x02,
                 (byte) 0xc0, (byte) 0x0c, };
 
-        Parser parser = Parser.Companion.fromFile("src/test/binparse/dns-sd.bp");
+        Parser parser = Parser.Companion.fromFile("src/test/binparse/dns.bp");
         Struct main = parser.getStructs().get("main");
 
         /*

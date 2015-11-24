@@ -27,11 +27,13 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
 
     private val questions = HashMap<String, Question>()
     private val answers = HashMap<Int, ResourceRec>()
+    private val authorities = HashMap<Int, ResourceRec>()
+    private val additionals = HashMap<Int, ResourceRec>()
 
     init {
         collectStrings()
-        buildAnswers()
         buildQuestions()
+        buildResourceRecs()
 
         if (answers.containsKey(TYPE_A) && answers.containsKey(TYPE_SRV)) {
             val srv = answers[TYPE_SRV]!!
@@ -41,10 +43,10 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
         }
         questions.values.forEach { println("Question from $from: $it") }
 
-        if (parsed.getInt("num_questions") == 0 && parsed.getInt("num_answers") == 0 &&
+        /*if (parsed.getInt("num_questions") == 0 && parsed.getInt("num_answers") == 0 &&
                 parsed.getInt("num_authorities") == 0 && parsed.getInt("num_additionals") == 0) {
             println("Empty message from $from, flags: " + parsed.getStruct("flags"))
-        }
+        }*/
     }
 
     private fun collectStrings() {
@@ -69,23 +71,25 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
     }
 
     private fun buildQuestions() {
-        parsed.getArray("questions")
-                .filter { it is ParseResult }
-                .map { it as ParseResult }
-                .forEach {
-                    val question = Question(it)
-                    questions.put(question.name, question)
-                }
+        parsed.getArray("questions").map { it as ParseResult }.forEach {
+            val question = Question(it)
+            questions.put(question.name, question)
+        }
     }
 
-    private fun buildAnswers() {
-        parsed.getArray("answers")
-                .filter { it is ParseResult }
-                .map { it as ParseResult }
-                .forEach {
-                    val answer = ResourceRec(it)
-                    answers.put(answer.type, answer)
-                }
+    private fun buildResourceRecs() {
+        parsed.getArray("answers").map { it as ParseResult }.forEach {
+            val rec = ResourceRec(it)
+            answers.put(rec.type, rec)
+        }
+        parsed.getArray("authorities").map { it as ParseResult }.forEach {
+            val rec = ResourceRec(it)
+            authorities.put(rec.type, rec)
+        }
+        parsed.getArray("additionals").map { it as ParseResult }.forEach {
+            val rec = ResourceRec(it)
+            additionals.put(rec.type, rec)
+        }
     }
 
     private fun getName(labels: ArrayField): String {
@@ -138,6 +142,8 @@ class DnsMessage(parsed: ParseResult, from: InetAddress) {
             } else if (type == TYPE_A) {
                 addr = "" + parsed.getInt("data.a0") + "." + parsed.getInt("data.a1") +
                         "." + parsed.getInt("data.a2") + "." + parsed.getInt("data.a3")
+            } else if (type == TYPE_PTR) {
+                //println(parsed.toString(0));
             }
         }
     }

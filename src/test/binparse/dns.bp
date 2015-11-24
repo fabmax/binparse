@@ -1,8 +1,14 @@
+#
+# UTF-8 string with up to 63 bytes (not characters!) length. Is used as DNS text label.
+#
 text: struct {
     len: int { bits: 6; }
     text: string { encoding: utf-8; length: len; }
 }
 
+#
+# DNS label, can be either a UTF-8 string (type = 0) or a pointer to a string at a different location (type = 3).
+#
 label: struct {
     type: int { bits: 2; }
     value: select {
@@ -14,9 +20,30 @@ label: struct {
 }
 
 #
-# Resource record containing a service description
+# Resource record data containing a IPv4 address. Used as data in resource records of type A (type = 1).
+# [len] is always 4.
+#
+resource_a: struct {
+    len: u16;
+    a0: u08;
+    a1: u08;
+    a2: u08;
+    a3: u08;
+}
+
+#
+# Resource record data containing a domain name pointer. Used as data in resource records of type PTR (type = 12).
+#
+resource_ptr: struct {
+    len: u16;
+    ptrdname: array { type: label { qualifiers: COLLECT; } length: u08; }
+}
+
+#
+# Resource record data containing a service description. Used as data in resource records of type SRV (type = 33).
 #
 resource_srv: struct {
+    len: u16;
     priority: u16;
     weight: u16;
     port: u16;
@@ -24,37 +51,44 @@ resource_srv: struct {
 }
 
 #
-# Resource record containing a IPv4 address
+# Resource record containing raw data. This is used for all other resource record types.
 #
-resource_a: struct {
-    a0: u08;
-    a1: u08;
-    a2: u08;
-    a3: u08;
+resource_else: struct {
+    len: u16;
+    raw: array { type: u08; length: len; }
 }
 
+#
+# Resource Record. This struct is used in the [answers], [authorities] and [additionals] sections of the main message.
+#
 resource_rec: struct {
     name: array { type: label { qualifiers: COLLECT; } length: u08; }
     type: u16;
     unique: bit;
     class: int { bits: 15; }
     ttl: u32;
-    len: u16;
     data: select {
         selector: type;
 
         A:    1 { use: resource_a; }
+        PTR: 12 { use: resource_ptr; }
         SRV: 33 { use: resource_srv; }
-        ELSE: * { use: array { type: u08; length: len; } }
+        ELSE: * { use: resource_else; }
     }
 }
 
+#
+# Question. This struct is used in the [questions] section of the main message.
+#
 question: struct {
     name: array { type: label { qualifiers: COLLECT; } length: u08; }
     type: u16;
     class: u16;
 }
 
+#
+# Flags of the main message.
+#
 flags: struct {
     QR: bit;
     OPCODE: int{ bits: 4;}
@@ -68,6 +102,9 @@ flags: struct {
     RCODE: int { bits: 4; }
 }
 
+#
+# Main DNS message.
+#
 main: struct {
     id: u16;
     flags: flags;
