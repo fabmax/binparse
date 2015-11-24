@@ -12,9 +12,9 @@ class SelectParser private constructor(fieldName: String, selector: String, choi
     private val selector = selector;
     private val choices = choices;
 
-    override fun parse(reader: BinReader, result: StructInstance): Field {
+    override fun parse(reader: BinReader, result: StructInstance): Field<*> {
         val sel = result[selector]
-        val parser = choices[sel.getDecimalValue()] ?: choices[null] ?:
+        val parser = choices[sel.getIntValue()] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
         val field = parser.parseField(reader, result)
         field.name = fieldName

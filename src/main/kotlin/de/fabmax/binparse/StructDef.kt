@@ -31,7 +31,7 @@ class StructDef(definition: Item) {
         val result = StructInstance(name);
         for (parser in parserChain) {
             val field = parser.parseField(reader, result);
-            field.index = result.fields.size;
+            field.index = result.value.size;
             result.put(field)
         }
         return result
@@ -47,7 +47,7 @@ class StructDef(definition: Item) {
     }
 
     private inner class StructFieldParser(fieldName: String): FieldParser(fieldName) {
-        override fun parse(reader: BinReader, result: StructInstance): Field {
+        override fun parse(reader: BinReader, result: StructInstance): StructInstance {
             return parse(reader)
         }
     }

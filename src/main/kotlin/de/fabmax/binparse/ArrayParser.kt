@@ -1,5 +1,7 @@
 package de.fabmax.binparse
 
+import java.util.*
+
 /**
  * Created by max on 17.11.2015.
  */
@@ -26,13 +28,13 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return "$fieldName: ArrayParser: type: $type, length-mode: $length"
     }
 
-    override fun parse(reader: BinReader, result: StructInstance): Field {
+    override fun parse(reader: BinReader, result: StructInstance): ArrayField {
         val field = ArrayField(fieldName)
 
         if (length.mode == LengthMode.BY_VALUE) {
             while (length.termParser != null) {
                 reader.mark()
-                if (length.termParser.parseField(reader, result).getDecimalValue() == 0L) {
+                if (length.termParser.parseField(reader, result).getIntValue() == 0L) {
                     break
                 }
                 reader.reset()
@@ -45,7 +47,7 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         } else {
             val length = when (length.mode) {
                 LengthMode.FIXED -> length.intLength
-                LengthMode.BY_FIELD -> result[length.strLength].getDecimalValue().toInt()
+                LengthMode.BY_FIELD -> result[length.strLength].getIntValue().toInt()
                 else -> 0
             }
             for (i in 1..length) {
@@ -59,13 +61,12 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
 
     private fun parseItem(field: ArrayField, reader: BinReader, resultSet: StructInstance): Boolean {
         val item = type.parseField(reader, resultSet)
-        item.index = field.values.size
-        field.values.add(item)
+        item.index = field.value.size
+        field.value.add(item)
         return item.hasQualifier(Field.QUAL_BREAK)
     }
 
     open internal class Factory() : FieldParserFactory() {
-
         override fun createParser(definition: Item): FieldParser {
             return ArrayParser(definition.identifier, parseType(definition), parseLength(definition))
         }
@@ -94,5 +95,52 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         private fun parseType(definition: Item): FieldParser {
             return FieldParserFactory.createParser(getItem(definition.childrenMap, "type"))
         }
+    }
+}
+
+class ArrayField(name: String, items: ArrayList<Field<*>> = ArrayList<Field<*>>()) :
+        Field<ArrayList<Field<*>>>(name, items), Iterable<Field<*>> by items {
+    val length: Int
+        get() = value.size
+
+    operator fun get(index: Int): Field<*> {
+        return value[index]
+    }
+
+    fun getArray(index: Int): ArrayField {
+        return value[index] as ArrayField
+    }
+
+    fun getStruct(index: Int): StructInstance {
+        return value[index] as StructInstance
+    }
+
+    override fun hasQualifier(qualifier: String): Boolean {
+        if (qualifier != QUAL_COLLECT && super.hasQualifier(QUAL_COLLECT)) {
+            return value.find { it.hasQualifier(qualifier) } != null
+        } else {
+            return super.hasQualifier(qualifier)
+        }
+    }
+
+    override fun toString(indent: Int, withFieldName: Boolean): String {
+        val buf = StringBuffer()
+        for (i in 1 .. indent) {
+            buf.append(' ')
+        }
+        val ind = buf.toString()
+
+        if (withFieldName) {
+            buf.append(name).append(" = ")
+        }
+
+        if (value.isEmpty()) {
+            buf.append("[]")
+        } else {
+            buf.append("[\n")
+            value.forEach { buf.append(it.toString(indent + 2, false)).append(",\n") }
+            buf.append(ind).append("]")
+        }
+        return buf.toString()
     }
 }

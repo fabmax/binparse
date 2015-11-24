@@ -11,7 +11,7 @@ abstract class FieldParser(fieldName: String) {
     val fieldName = fieldName
     val qualifiers = HashSet<String>()
 
-    fun parseField(reader: BinReader, result: StructInstance): Field {
+    fun parseField(reader: BinReader, result: StructInstance): Field<*> {
         val offset = reader.pos
         val field = parse(reader, result)
         field.offset = offset
@@ -21,6 +21,6 @@ abstract class FieldParser(fieldName: String) {
         return field
     }
 
-    abstract fun parse(reader: BinReader, result: StructInstance): Field
+    abstract fun parse(reader: BinReader, result: StructInstance): Field<*>
 
 }

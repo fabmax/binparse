@@ -20,19 +20,19 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
         return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
     }
 
-    override fun parse(reader: BinReader, result: StructInstance): Field {
+    override fun parse(reader: BinReader, result: StructInstance): IntField {
         try {
             var value = reader.readBits(bits);
             if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {
                 value -= (1 shl bits)
             }
-            return DecimalField(fieldName, value)
+            return IntField(fieldName, value)
         } catch (e: IOException) {
             throw IOException("Failed parsing int: name: $fieldName, bits: $bits", e)
         }
     }
 
-    class Factory(bits: Int, signedness: IntParser.Signedness?) : FieldParserFactory() {
+    internal class Factory(bits: Int, signedness: IntParser.Signedness?) : FieldParserFactory() {
         val bits = bits
         val signedness = signedness
 
@@ -64,5 +64,14 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
             return parseDecimal(bitsIt.value)?.toInt() ?:
                     throw NumberFormatException("Invalid bit size: " + bitsIt.value)
         }
+    }
+}
+
+/**
+ * A [Field] for storing ints with sizes of 1 to 64 bits. All ints are saved in a Long.
+ */
+class IntField(name: String, value: Long): Field<Long>(name, value) {
+    override fun getIntValue(): Long {
+        return value
     }
 }
