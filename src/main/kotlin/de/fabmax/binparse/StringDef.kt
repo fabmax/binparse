@@ -7,8 +7,8 @@ import java.util.*
  * Created by max on 17.11.2015.
  */
 
-class StringParser private constructor(fieldName: String, encoding: Charset, length: ArrayParser.Length):
-        FieldParser(fieldName) {
+class StringDef private constructor(fieldName: String, encoding: Charset, length: ArrayDef.Length):
+        FieldDef(fieldName) {
 
     private val encoding = encoding
     private val length = length
@@ -17,15 +17,11 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
         return "$fieldName: StringParser: encoding: $encoding, length: $length"
     }
 
-    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
-        return field is StringField
-    }
-
-    override fun parse(reader: BinReader, result: StructInstance): StringField {
+    override fun parse(reader: BinReader, parent: StructInstance): StringField {
         val data = when (length.mode) {
-            ArrayParser.LengthMode.FIXED -> reader.readBytes(length.intLength)
-            ArrayParser.LengthMode.BY_FIELD -> reader.readBytes(result[length.strLength].getIntValue().toInt())
-            ArrayParser.LengthMode.BY_VALUE -> readNullTerminated(reader, result)
+            ArrayDef.LengthMode.FIXED -> reader.readBytes(length.intLength)
+            ArrayDef.LengthMode.BY_FIELD -> reader.readBytes(parent[length.strLength].getIntValue().toInt())
+            ArrayDef.LengthMode.BY_VALUE -> readNullTerminated(reader, parent)
         }
         return StringField(fieldName, String(data, encoding))
     }
@@ -44,12 +40,20 @@ class StringParser private constructor(fieldName: String, encoding: Charset, len
         return bytes.toByteArray()
     }
 
-    internal class Factory(encoding: Charset?) : ArrayParser.Factory() {
+    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
+        println("array.write not yet implemented")
+    }
+
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        return field is StringField
+    }
+
+    internal class Factory(encoding: Charset?) : ArrayDef.Factory() {
         val encoding = encoding
 
-        override fun createParser(definition: Item): FieldParser {
+        override fun createParser(definition: Item): FieldDef {
             val encoding = this.encoding ?: parseEncoding(definition)
-            return StringParser(definition.identifier, encoding, parseLength(definition))
+            return StringDef(definition.identifier, encoding, parseLength(definition))
         }
 
         private fun parseEncoding(definition: Item): Charset {

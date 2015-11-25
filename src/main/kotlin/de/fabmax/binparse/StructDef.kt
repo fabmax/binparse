@@ -7,11 +7,11 @@ import java.util.*
  * Created by max on 18.11.2015.
  */
 
-class StructDef(definition: Item) {
+class StructDef(definition: Item) : FieldDef(definition.identifier) {
 
     val name = definition.identifier;
 
-    private val parserChain = ArrayList<FieldParser>()
+    private val parserChain = ArrayList<FieldDef>()
 
     init {
         if (definition.value != "struct") {
@@ -35,6 +35,28 @@ class StructDef(definition: Item) {
         return result
     }
 
+    override fun parse(reader: BinReader, parent: StructInstance): StructInstance {
+        return parse(reader)
+    }
+
+    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
+        if (field is StructInstance) {
+            parserChain.forEach {
+                it.write(writer, field[it.fieldName], field);
+            }
+        } else {
+            throw IllegalArgumentException("field has to be a StructInstance (is " + field.javaClass.name + ")")
+        }
+    }
+
+    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
+        if (field is StructInstance) {
+            return matchesDef(field)
+        } else {
+            return false
+        }
+    }
+
     fun matchesDef(struct: StructInstance): Boolean {
         for (parser in parserChain) {
             if (parser.fieldName !in struct) {
@@ -46,26 +68,12 @@ class StructDef(definition: Item) {
         return parserChain.find { it.fieldName !in struct } == null
     }
 
-    private inner class ParserFactory(val def: StructDef): FieldParserFactory() {
-        override fun createParser(definition: Item): FieldParser {
+    private inner class ParserFactory(val def: StructDef) : FieldParserFactory() {
+        override fun createParser(definition: Item): FieldDef {
             if (definition.value != name) {
                 throw IllegalArgumentException("Invalid def type: " + definition.value + " != $name")
             }
-            return StructFieldParser(definition.identifier, def)
-        }
-    }
-
-    private inner class StructFieldParser(fieldName: String, val def: StructDef): FieldParser(fieldName) {
-        override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
-            if (field is StructInstance) {
-                return def.matchesDef(field)
-            } else {
-                return false
-            }
-        }
-
-        override fun parse(reader: BinReader, result: StructInstance): StructInstance {
-            return parse(reader)
+            return def
         }
     }
 }

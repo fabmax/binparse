@@ -6,11 +6,24 @@ import java.util.*
  * Created by max on 21.11.2015.
  */
 
-class SelectParser private constructor(fieldName: String, selector: String, choices: Map<Long?, FieldParser>):
-        FieldParser(fieldName) {
+class SelectDef private constructor(fieldName: String, selector: String, choices: Map<Long?, FieldDef>):
+        FieldDef(fieldName) {
 
     private val selector = selector;
     private val choices = choices;
+
+    override fun parse(reader: BinReader, parent: StructInstance): Field<*> {
+        val sel = parent[selector]
+        val parser = choices[sel.getIntValue()] ?: choices[null] ?:
+                throw IllegalArgumentException("Unmapped selector value: $sel")
+        val field = parser.parseField(reader, parent)
+        field.name = fieldName
+        return field
+    }
+
+    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
+        throw UnsupportedOperationException()
+    }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
         val sel = parent[selector]
@@ -18,27 +31,18 @@ class SelectParser private constructor(fieldName: String, selector: String, choi
         return parser.matchesDef(field, parent)
     }
 
-    override fun parse(reader: BinReader, result: StructInstance): Field<*> {
-        val sel = result[selector]
-        val parser = choices[sel.getIntValue()] ?: choices[null] ?:
-                throw IllegalArgumentException("Unmapped selector value: $sel")
-        val field = parser.parseField(reader, result)
-        field.name = fieldName
-        return field
-    }
-
     internal class Factory() : FieldParserFactory() {
-        override fun createParser(definition: Item): FieldParser {
+        override fun createParser(definition: Item): FieldDef {
             val selector = getItem(definition.childrenMap, "selector").value
-            val choices = HashMap<Long?, FieldParser>()
+            val choices = HashMap<Long?, FieldDef>()
 
             definition.childrenMap.filter { item -> item.key != "selector" }
                     .forEach { item -> addFieldParser(item.value, choices) }
 
-            return SelectParser(definition.identifier, selector, choices)
+            return SelectDef(definition.identifier, selector, choices)
         }
 
-        private fun addFieldParser(definition: Item, choices: HashMap<Long?, FieldParser>) {
+        private fun addFieldParser(definition: Item, choices: HashMap<Long?, FieldDef>) {
             val parserDef = getItem(definition.childrenMap, "use")
             val key = if (definition.value == "*") {
                 null

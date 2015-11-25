@@ -1,12 +1,10 @@
 package de.fabmax.binparse
 
-import java.io.IOException
-
 /**
  * Created by max on 17.11.2015.
  */
 
-class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness): FieldParser(fieldName) {
+class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): FieldDef(fieldName) {
 
     enum class Signedness {
         SIGNED,
@@ -16,38 +14,38 @@ class IntParser(fieldName: String, size: Int, signedness: IntParser.Signedness):
     val bits = size
     val signedness = signedness
 
-    override fun toString(): String {
-        return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
+    override fun parse(reader: BinReader, parent: StructInstance): IntField {
+        var value = reader.readBits(bits)
+        if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {
+            value -= (1 shl bits)
+        }
+        return IntField(fieldName, value)
+    }
+
+    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
+        writer.writeBits(bits, field.getIntValue())
     }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
         return field is IntField
     }
 
-    override fun parse(reader: BinReader, result: StructInstance): IntField {
-        try {
-            var value = reader.readBits(bits);
-            if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {
-                value -= (1 shl bits)
-            }
-            return IntField(fieldName, value)
-        } catch (e: IOException) {
-            throw IOException("Failed parsing int: name: $fieldName, bits: $bits", e)
-        }
+    override fun toString(): String {
+        return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
     }
 
-    internal class Factory(bits: Int, signedness: IntParser.Signedness?) : FieldParserFactory() {
+    internal class Factory(bits: Int, signedness: IntDef.Signedness?) : FieldParserFactory() {
         val bits = bits
         val signedness = signedness
 
-        override fun createParser(definition: Item): FieldParser {
+        override fun createParser(definition: Item): FieldDef {
             val bits = if (this.bits != 0) {
                 this.bits
             } else {
                 parseBits(definition)
             }
             val signedness = this.signedness ?: parseSignedness(definition)
-            return IntParser(definition.identifier, bits, signedness)
+            return IntDef(definition.identifier, bits, signedness)
         }
 
         fun parseSignedness(definition: Item): Signedness {
@@ -79,7 +77,15 @@ class IntField(name: String, value: Long): Field<Long>(name, value) {
         return value
     }
 
-    operator fun Long.unaryPlus() {
-        value = this
-    }
+//
+//    Unfortunately this doesn't seem to work :/
+//
+//    operator fun Int.unaryPlus() {
+//        println("set int")
+//        value = toLong()
+//    }
+//
+//    operator fun Long.unaryPlus() {
+//        value = this
+//    }
 }

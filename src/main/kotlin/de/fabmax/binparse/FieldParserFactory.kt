@@ -15,27 +15,27 @@ abstract class FieldParserFactory {
         private val parserFactories = HashMap<String, FieldParserFactory>()
 
         init {
-            parserFactories.put("int", IntParser.Factory(0, null))
+            parserFactories.put("int", IntDef.Factory(0, null))
 
-            parserFactories.put("bit", IntParser.Factory(1, IntParser.Signedness.UNSIGNED))
-            parserFactories.put("u08", IntParser.Factory(8, IntParser.Signedness.UNSIGNED))
-            parserFactories.put("u16", IntParser.Factory(16, IntParser.Signedness.UNSIGNED))
-            parserFactories.put("u32", IntParser.Factory(32, IntParser.Signedness.UNSIGNED))
-            parserFactories.put("u64", IntParser.Factory(64, IntParser.Signedness.UNSIGNED))
+            parserFactories.put("bit", IntDef.Factory(1, IntDef.Signedness.UNSIGNED))
+            parserFactories.put("u08", IntDef.Factory(8, IntDef.Signedness.UNSIGNED))
+            parserFactories.put("u16", IntDef.Factory(16, IntDef.Signedness.UNSIGNED))
+            parserFactories.put("u32", IntDef.Factory(32, IntDef.Signedness.UNSIGNED))
+            parserFactories.put("u64", IntDef.Factory(64, IntDef.Signedness.UNSIGNED))
 
-            parserFactories.put("i08", IntParser.Factory(8, IntParser.Signedness.SIGNED))
-            parserFactories.put("i16", IntParser.Factory(16, IntParser.Signedness.SIGNED))
-            parserFactories.put("i32", IntParser.Factory(32, IntParser.Signedness.SIGNED))
-            parserFactories.put("i64", IntParser.Factory(64, IntParser.Signedness.SIGNED))
+            parserFactories.put("i08", IntDef.Factory(8, IntDef.Signedness.SIGNED))
+            parserFactories.put("i16", IntDef.Factory(16, IntDef.Signedness.SIGNED))
+            parserFactories.put("i32", IntDef.Factory(32, IntDef.Signedness.SIGNED))
+            parserFactories.put("i64", IntDef.Factory(64, IntDef.Signedness.SIGNED))
 
-            parserFactories.put("string", StringParser.Factory(null))
-            parserFactories.put("utf-8", StringParser.Factory(Charsets.UTF_8))
+            parserFactories.put("string", StringDef.Factory(null))
+            parserFactories.put("utf-8", StringDef.Factory(Charsets.UTF_8))
 
-            parserFactories.put("array", ArrayParser.Factory())
-            parserFactories.put("select", SelectParser.Factory())
+            parserFactories.put("array", ArrayDef.Factory())
+            parserFactories.put("select", SelectDef.Factory())
         }
 
-        fun createParser(definition: Item): FieldParser {
+        fun createParser(definition: Item): FieldDef {
             try {
                 val fac = parserFactories[definition.value] ?:
                         throw IllegalArgumentException("Unknown type: " + definition.value)
@@ -59,13 +59,13 @@ abstract class FieldParserFactory {
             return parserFactories.containsKey(name)
         }
 
-        private fun addQualifiers(definition: Item, parser: FieldParser) {
+        private fun addQualifiers(definition: Item, fieldDef: FieldDef) {
             val qualifiers = definition.childrenMap["_qualifiers"] ?: return
 
             qualifiers.value.splitToSequence('|').forEach {
                 val q = it.trim()
                 if (Field.QUALIFIERS.contains(q)) {
-                    parser.qualifiers.add(q)
+                    fieldDef.qualifiers.add(q)
                 } else {
                     throw IllegalArgumentException("Invalid / unknown qualifier: $q")
                 }
@@ -73,7 +73,7 @@ abstract class FieldParserFactory {
         }
     }
 
-    abstract fun createParser(definition: Item): FieldParser;
+    abstract fun createParser(definition: Item): FieldDef;
 
     protected fun parseDecimal(string: String): Long? {
         if (string.matches(decimalRegex)) {

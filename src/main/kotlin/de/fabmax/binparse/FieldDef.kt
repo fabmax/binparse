@@ -6,7 +6,7 @@ import java.util.*
  * Created by max on 17.11.2015.
  */
 
-abstract class FieldParser(fieldName: String) {
+abstract class FieldDef(fieldName: String) {
 
     val fieldName = fieldName
     val qualifiers = HashSet<String>()
@@ -21,7 +21,9 @@ abstract class FieldParser(fieldName: String) {
         return field
     }
 
-    abstract fun matchesDef(field: Field<*>, parent: StructInstance): Boolean;
+    protected abstract fun parse(reader: BinReader, parent: StructInstance): Field<*>
 
-    abstract fun parse(reader: BinReader, result: StructInstance): Field<*>
+    abstract fun write(writer: BinWriter, field: Field<*>, parent: StructInstance)
+
+    abstract fun matchesDef(field: Field<*>, parent: StructInstance): Boolean
 }

@@ -6,8 +6,8 @@ import java.util.*
  * Created by max on 17.11.2015.
  */
 
-class ArrayParser private constructor(fieldName: String, type: FieldParser, length: ArrayParser.Length):
-        FieldParser(fieldName) {
+class ArrayDef private constructor(fieldName: String, type: FieldDef, length: ArrayDef.Length):
+        FieldDef(fieldName) {
 
     internal enum class LengthMode {
         FIXED,
@@ -19,13 +19,42 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
             val mode: LengthMode,
             val strLength: String,
             val intLength: Int,
-            val termParser: FieldParser?)
+            val termParser: FieldDef?)
 
     private val type = type
     private val length = length
 
-    override fun toString(): String {
-        return "$fieldName: ArrayParser: type: $type, length-mode: $length"
+    protected override fun parse(reader: BinReader, parent: StructInstance): ArrayField {
+        val field = ArrayField(fieldName)
+
+        if (length.mode == LengthMode.BY_VALUE) {
+            while (length.termParser != null) {
+                reader.mark()
+                if (length.termParser.parseField(reader, parent).getIntValue() == 0L) {
+                    break
+                }
+                reader.reset()
+                if (parseItem(field, reader, parent)) {
+                    break
+                }
+            }
+        } else {
+            val length = when (length.mode) {
+                LengthMode.FIXED -> length.intLength
+                LengthMode.BY_FIELD -> parent[length.strLength].getIntValue().toInt()
+                else -> 0
+            }
+            for (i in 1..length) {
+                if (parseItem(field, reader, parent)) {
+                    break
+                }
+            }
+        }
+        return field
+    }
+
+    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
+        println("array.write not yet implemented")
     }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
@@ -40,37 +69,6 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         }
     }
 
-    override fun parse(reader: BinReader, result: StructInstance): ArrayField {
-        val field = ArrayField(fieldName)
-
-        if (length.mode == LengthMode.BY_VALUE) {
-            while (length.termParser != null) {
-                reader.mark()
-                if (length.termParser.parseField(reader, result).getIntValue() == 0L) {
-                    break
-                }
-                reader.reset()
-
-                if (parseItem(field, reader, result)) {
-                    break
-                }
-            }
-
-        } else {
-            val length = when (length.mode) {
-                LengthMode.FIXED -> length.intLength
-                LengthMode.BY_FIELD -> result[length.strLength].getIntValue().toInt()
-                else -> 0
-            }
-            for (i in 1..length) {
-                if (parseItem(field, reader, result)) {
-                    break
-                }
-            }
-        }
-        return field
-    }
-
     private fun parseItem(field: ArrayField, reader: BinReader, resultSet: StructInstance): Boolean {
         val item = type.parseField(reader, resultSet)
         item.index = field.value.size
@@ -78,9 +76,13 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
         return item.hasQualifier(Field.QUAL_BREAK)
     }
 
+    override fun toString(): String {
+        return "$fieldName: ArrayParser: type: $type, length-mode: $length"
+    }
+
     internal open class Factory() : FieldParserFactory() {
-        override fun createParser(definition: Item): FieldParser {
-            return ArrayParser(definition.identifier, parseType(definition), parseLength(definition))
+        override fun createParser(definition: Item): FieldDef {
+            return ArrayDef(definition.identifier, parseType(definition), parseLength(definition))
         }
 
         internal fun parseLength(definition: Item): Length {
@@ -89,7 +91,7 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
             val strLen = lengthItem.value
             val decLen = parseDecimal(strLen)
             var intLen = 0
-            var termParser: FieldParser? = null
+            var termParser: FieldDef? = null
 
             if (decLen != null) {
                 lenMode = LengthMode.FIXED
@@ -104,7 +106,7 @@ class ArrayParser private constructor(fieldName: String, type: FieldParser, leng
             return Length(lenMode, strLen, intLen, termParser)
         }
 
-        private fun parseType(definition: Item): FieldParser {
+        private fun parseType(definition: Item): FieldDef {
             return FieldParserFactory.createParser(getItem(definition.childrenMap, "type"))
         }
     }

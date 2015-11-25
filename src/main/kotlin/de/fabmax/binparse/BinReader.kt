@@ -7,13 +7,10 @@ import java.io.InputStream
  * Created by max on 18.11.2015.
  */
 
-class BinReader(input: InputStream) {
-
-    private val input = input
+class BinReader(val input: InputStream) {
 
     var pos = 0
         private set
-
 
     private var mark = 0
     private var nextByte = 0

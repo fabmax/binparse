@@ -64,6 +64,10 @@ abstract class Field<T>(name: String, initVal: T) {
         return value.toString()
     }
 
+    open fun set(value: T) {
+        this.value = value
+    }
+
     override fun toString(): String {
         return getStringValue()
     }
