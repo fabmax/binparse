@@ -34,7 +34,7 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
         return "$fieldName: IntParser: bits: $bits, signedness: $signedness"
     }
 
-    internal class Factory(bits: Int, signedness: IntDef.Signedness?) : FieldParserFactory() {
+    internal class Factory(bits: Int, signedness: IntDef.Signedness?) : FieldDefFactory() {
         val bits = bits
         val signedness = signedness
 
@@ -72,13 +72,14 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
 /**
  * A [Field] for storing ints with sizes of 1 to 64 bits. All ints are saved in a Long.
  */
-class IntField(name: String, value: Long): Field<Long>(name, value) {
+class IntField(name: String, value: Long) : Field<Long>(name, value) {
     override fun getIntValue(): Long {
         return value
     }
 
 //
-//    Unfortunately this doesn't seem to work :/
+//    Unfortunately this doesn't seem to work, because Int and Long use their native unaryPlus instead of the
+//    overloaded one...
 //
 //    operator fun Int.unaryPlus() {
 //        println("set int")

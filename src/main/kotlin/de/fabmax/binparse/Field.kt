@@ -26,12 +26,19 @@ abstract class Field<T>(name: String, initVal: T) {
     var index = 0
     var offset = 0
 
-    var qualifiers: Set<String>? = null
+    var qualifiers: HashSet<String>? = null
 
     var value = initVal
 
     open fun hasQualifier(qualifier: String): Boolean {
         return qualifiers?.contains(qualifier) ?: false
+    }
+
+    fun addQualifier(qualifier: String) {
+        if (qualifiers == null) {
+            qualifiers = HashSet<String>()
+        }
+        qualifiers!!.add(qualifier)
     }
 
     /**

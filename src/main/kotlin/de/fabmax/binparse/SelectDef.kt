@@ -13,16 +13,45 @@ class SelectDef private constructor(fieldName: String, selector: String, choices
     private val choices = choices;
 
     override fun parse(reader: BinReader, parent: StructInstance): Field<*> {
-        val sel = parent[selector]
-        val parser = choices[sel.getIntValue()] ?: choices[null] ?:
+        val sel = parent.getLong(selector)
+        val type = choices[sel] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
-        val field = parser.parseField(reader, parent)
+        val field = type.parseField(reader, parent)
         field.name = fieldName
         return field
     }
 
+    override fun prepareWrite(field: Field<*>, parent: StructInstance) {
+        if (selector !in parent) {
+            // make an educated guess about the selector field
+            for ((key, fieldDef) in choices) {
+                if (fieldDef.matchesDef(field, parent)) {
+                    if (selector !in parent) {
+                        parent.int(selector) {}
+                    }
+                    if (key != null) {
+                        (parent[selector] as IntField).set(key)
+                    }
+                }
+            }
+        }
+        val sel = parent.getLong(selector)
+        val type = choices[sel] ?: choices[null] ?:
+                throw IllegalArgumentException("Unmapped selector value: $sel")
+        try {
+            type.prepareWrite(field, parent)
+        } catch(e: NoSuchFieldException) {
+            println("no such field, sel=$sel")
+            println(parent.toString(0))
+            throw e
+        }
+    }
+
     override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
-        throw UnsupportedOperationException()
+        val sel = parent.getLong(selector)
+        val type = choices[sel] ?: choices[null] ?:
+                throw IllegalArgumentException("Unmapped selector value: $sel")
+        type.write(writer, field, parent)
     }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
@@ -31,7 +60,7 @@ class SelectDef private constructor(fieldName: String, selector: String, choices
         return parser.matchesDef(field, parent)
     }
 
-    internal class Factory() : FieldParserFactory() {
+    internal class Factory() : FieldDefFactory() {
         override fun createParser(definition: Item): FieldDef {
             val selector = getItem(definition.childrenMap, "selector").value
             val choices = HashMap<Long?, FieldDef>()
@@ -50,7 +79,7 @@ class SelectDef private constructor(fieldName: String, selector: String, choices
                 parseDecimal(definition.value) ?: throw NumberFormatException("Invalid select mapping: " +
                         definition.identifier + ": " + definition.value)
             }
-            choices.put(key, FieldParserFactory.createParser(parserDef))
+            choices.put(key, FieldDefFactory.createParser(parserDef))
         }
     }
 }

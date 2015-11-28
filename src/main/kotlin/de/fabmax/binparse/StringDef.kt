@@ -40,8 +40,26 @@ class StringDef private constructor(fieldName: String, encoding: Charset, length
         return bytes.toByteArray()
     }
 
+    override fun prepareWrite(field: Field<*>, parent: StructInstance) {
+        val string = field as StringField
+        if (length.mode == ArrayDef.LengthMode.BY_FIELD) {
+            if (length.strLength !in parent) {
+                parent.int(length.strLength) {}
+            }
+            if (parent.getInt(length.strLength) == 0) {
+                (parent[length.strLength] as IntField).value = string.value.toByteArray(encoding).size.toLong()
+            }
+        }
+    }
+
     override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
-        println("array.write not yet implemented")
+        val string = field as StringField
+        writer.writeBytes(string.value.toByteArray(encoding));
+        if (length.mode == ArrayDef.LengthMode.BY_VALUE && length.termParser != null) {
+            // For now this means null-terminated, so write a null...
+            val term = IntField("null", 0)
+            length.termParser.write(writer, term, parent)
+        }
     }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {

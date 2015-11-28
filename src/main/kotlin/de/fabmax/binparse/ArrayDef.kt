@@ -41,7 +41,7 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef, length: Ar
         } else {
             val length = when (length.mode) {
                 LengthMode.FIXED -> length.intLength
-                LengthMode.BY_FIELD -> parent[length.strLength].getIntValue().toInt()
+                LengthMode.BY_FIELD -> parent.getInt(length.strLength)
                 else -> 0
             }
             for (i in 1..length) {
@@ -53,8 +53,34 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef, length: Ar
         return field
     }
 
+    override fun prepareWrite(field: Field<*>, parent: StructInstance) {
+        val array = field as ArrayField;
+        if (length.mode == LengthMode.BY_FIELD) {
+            if (length.strLength !in parent) {
+                parent.int(length.strLength) {}
+            }
+            (parent[length.strLength] as IntField).value = array.size.toLong()
+        }
+        for (item in array.value) {
+            type.prepareWrite(item, parent)
+        }
+    }
+
     override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
-        println("array.write not yet implemented")
+        val array = field as ArrayField;
+        var isBreak = false;
+        for (item in array.value) {
+            type.write(writer, item, parent)
+            if (item.hasQualifier(Field.QUAL_BREAK)) {
+                isBreak = true;
+                break;
+            }
+        }
+        if (length.mode == ArrayDef.LengthMode.BY_VALUE && length.termParser != null && !isBreak) {
+            // For now this means null-terminated, so write a null...
+            val term = IntField("null", 0)
+            length.termParser.write(writer, term, parent)
+        }
     }
 
     override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
@@ -80,7 +106,7 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef, length: Ar
         return "$fieldName: ArrayParser: type: $type, length-mode: $length"
     }
 
-    internal open class Factory() : FieldParserFactory() {
+    internal open class Factory() : FieldDefFactory() {
         override fun createParser(definition: Item): FieldDef {
             return ArrayDef(definition.identifier, parseType(definition), parseLength(definition))
         }
@@ -99,22 +125,22 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef, length: Ar
                 if (intLen <= 0) {
                     throw IllegalArgumentException("Invalid length specified: $intLen")
                 }
-            } else if (FieldParserFactory.isType(strLen)) {
+            } else if (FieldDefFactory.isType(strLen)) {
                 lenMode = LengthMode.BY_VALUE
-                termParser = FieldParserFactory.createParser(lengthItem)
+                termParser = FieldDefFactory.createParser(lengthItem)
             }
             return Length(lenMode, strLen, intLen, termParser)
         }
 
         private fun parseType(definition: Item): FieldDef {
-            return FieldParserFactory.createParser(getItem(definition.childrenMap, "type"))
+            return FieldDefFactory.createParser(getItem(definition.childrenMap, "type"))
         }
     }
 }
 
 class ArrayField(name: String, items: ArrayList<Field<*>> = ArrayList<Field<*>>()) :
         Field<ArrayList<Field<*>>>(name, items), Iterable<Field<*>> by items {
-    val length: Int
+    val size: Int
         get() = value.size
 
     operator fun get(index: Int): Field<*> {

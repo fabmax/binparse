@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
     val parser = Parser.fromFile("src/test/binparse/dns.bp")
     val msgDef = parser.structs["main"]!!
 
-
+    // builders rock!
     val instance = struct {
         int("id") { set(12345) }
         struct("flags") {
@@ -29,10 +29,10 @@ fun main(args: Array<String>) {
             int("CD") { }
             int("RCODE"){ set(1) }
         }
-        int("num_questions") { }
-        int("num_answers") { }
-        int("num_authorities") { }
-        int("num_additionals") { }
+//        int("num_questions") { }
+//        int("num_answers") { }
+//        int("num_authorities") { }
+//        int("num_additionals") { }
         array("questions") { }
         array("answers") { }
         array("authorities") { }

@@ -94,7 +94,7 @@ class DnsMessage(parsed: StructInstance, from: InetAddress) {
 
     private fun getName(labels: ArrayField): String {
         val name = StringBuilder()
-        for (i in 0 .. labels.length - 1) {
+        for (i in 0 .. labels.size - 1) {
             val item = labels.getStruct(i)
             val type = item.getInt("type")
             when (type) {

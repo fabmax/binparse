@@ -18,7 +18,7 @@ class BinWriter(val output: OutputStream) {
     @Throws(IOException::class)
     fun writeBytes(data: ByteArray) {
         for (b in 0 .. data.size - 1) {
-            writeU08(b.toInt())
+            writeU08(data[b].toInt())
         }
     }
 

@@ -3,6 +3,7 @@ package de.fabmax.binparse;
 import de.fabmax.binparse.examples.DnsMessage;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
@@ -107,7 +108,25 @@ public class ServiceDiscovery {
 
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
         StructInstance result = main.parse(bin);
+        System.out.println(result.toString(8, false));
         new DnsMessage(result, InetAddress.getLocalHost());
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        BinWriter writer = new BinWriter(out);
+        main.write(writer, result, result);
+
+        byte[] data = out.toByteArray();
+        for (int i = 0; i < data.length; i++) {
+            System.out.printf("%02x ", data[i]);
+
+            if (data[i] != buf[i]) {
+                System.out.println("kaputt");
+            }
+
+            if ((i+1) % 8 == 0) {
+                System.out.println();
+            }
+        }
 
         /*Iterable<Field> flaterator = result::flat;
         Stream<Field> fields = StreamSupport.stream(flaterator.spliterator(), false);

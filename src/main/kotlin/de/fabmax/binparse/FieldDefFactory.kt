@@ -7,12 +7,12 @@ import kotlin.text.Regex
  * Created by max on 15.11.2015.
  */
 
-abstract class FieldParserFactory {
+abstract class FieldDefFactory {
 
     private val decimalRegex = Regex("([0-9]*)|(0x[0-9a-fA-F]*)|(0b[01]*)")
 
     companion object {
-        private val parserFactories = HashMap<String, FieldParserFactory>()
+        private val parserFactories = HashMap<String, FieldDefFactory>()
 
         init {
             parserFactories.put("int", IntDef.Factory(0, null))
@@ -48,7 +48,7 @@ abstract class FieldParserFactory {
             }
         }
 
-        fun addParserFactory(typeName: String, factory: FieldParserFactory) {
+        fun addParserFactory(typeName: String, factory: FieldDefFactory) {
             if (parserFactories.containsKey(typeName)) {
                 throw IllegalArgumentException("Type name is already registered")
             }
