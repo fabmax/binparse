@@ -112,8 +112,7 @@ public class ServiceDiscovery {
         new DnsMessage(result, InetAddress.getLocalHost());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        BinWriter writer = new BinWriter(out);
-        main.write(writer, result, result);
+        main.write(out, result);
 
         byte[] data = out.toByteArray();
         for (int i = 0; i < data.length; i++) {

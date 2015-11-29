@@ -45,7 +45,7 @@ abstract class Field<T>(name: String, initVal: T) {
      * Return the int value of a field. Because in binparse ints can have arbitrary sizes between 1 and 64 bits this
      * method returns a Long. For non-int fields this method throws an UnsupportedOperationException.
      */
-    open fun getIntValue(): Long {
+    /*open fun getIntValue(): Long {
         val v = value
         if (v is Long) {
             return v
@@ -69,14 +69,14 @@ abstract class Field<T>(name: String, initVal: T) {
 
     open fun getStringValue(): String {
         return value.toString()
-    }
+    }*/
 
     open fun set(value: T) {
         this.value = value
     }
 
     override fun toString(): String {
-        return getStringValue()
+        return value.toString()
     }
 
     open fun toString(indent: Int, withFieldName: Boolean = true): String {
@@ -87,7 +87,7 @@ abstract class Field<T>(name: String, initVal: T) {
         if (withFieldName) {
             buf.append(name).append(" = ")
         }
-        buf.append(getStringValue())
+        buf.append(value.toString())
         return buf.toString()
     }
 }

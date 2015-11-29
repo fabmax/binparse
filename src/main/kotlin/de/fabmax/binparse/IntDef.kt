@@ -4,7 +4,7 @@ package de.fabmax.binparse
  * Created by max on 17.11.2015.
  */
 
-class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): FieldDef(fieldName) {
+class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness) : FieldDef<IntField>(fieldName) {
 
     enum class Signedness {
         SIGNED,
@@ -14,7 +14,7 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
     val bits = size
     val signedness = signedness
 
-    override fun parse(reader: BinReader, parent: StructInstance): IntField {
+    override fun parse(reader: BinReader, context: ContainerField<*>): IntField {
         var value = reader.readBits(bits)
         if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {
             value -= (1 shl bits)
@@ -22,12 +22,20 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
         return IntField(fieldName, value)
     }
 
-    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
-        writer.writeBits(bits, field.getIntValue())
+    override fun prepareWrite(context: ContainerField<*>) {
+        if (hasQualifier(Field.QUAL_SIZE) && fieldName !in context) {
+            context.put(IntField(fieldName, 0))
+        }
+        super.prepareWrite(context)
     }
 
-    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
-        return field is IntField
+    override fun write(writer: BinWriter, context: ContainerField<*>) {
+        writer.writeBits(bits, context.getInt(fieldName).value)
+    }
+
+    override fun matchesDef(context: ContainerField<*>): Boolean {
+        // IntFields with SIZE qualifier are added automatically before write
+        return hasQualifier(Field.QUAL_SIZE) || context[fieldName] is IntField
     }
 
     override fun toString(): String {
@@ -38,7 +46,7 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
         val bits = bits
         val signedness = signedness
 
-        override fun createParser(definition: Item): FieldDef {
+        override fun createParser(definition: Item): IntDef {
             val bits = if (this.bits != 0) {
                 this.bits
             } else {
@@ -70,12 +78,14 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness): Field
 }
 
 /**
- * A [Field] for storing ints with sizes of 1 to 64 bits. All ints are saved in a Long.
+ * A [Field] for storing ints with sizes of 1 to 64 bits.
  */
 class IntField(name: String, value: Long) : Field<Long>(name, value) {
-    override fun getIntValue(): Long {
-        return value
-    }
+    var intValue: Int
+        get() = value.toInt()
+        set(value) {
+            this.value = value.toLong()
+        }
 
 //
 //    Unfortunately this doesn't seem to work, because Int and Long use their native unaryPlus instead of the

@@ -6,17 +6,17 @@ import java.util.*
  * Created by max on 17.11.2015.
  */
 
-abstract class FieldDef(fieldName: String) {
+abstract class FieldDef<T : Field<*>>(fieldName: String) {
 
-    val fieldName = fieldName
+    var fieldName = fieldName
     val qualifiers = HashSet<String>()
 
-    fun parseField(reader: BinReader, result: StructInstance): Field<*> {
+    fun parseField(reader: BinReader, context: ContainerField<*>): T {
         val offset = reader.pos
-        val field = parse(reader, result)
+        val field = parse(reader, context)
         field.offset = offset
         if (!qualifiers.isEmpty()) {
-            field.qualifiers = HashSet<String>(qualifiers);
+            field.qualifiers = HashSet<String>(qualifiers)
         }
         return field
     }
@@ -25,13 +25,17 @@ abstract class FieldDef(fieldName: String) {
         return qualifiers.contains(qualifier)
     }
 
-    protected abstract fun parse(reader: BinReader, parent: StructInstance): Field<*>
+    protected abstract fun parse(reader: BinReader, context: ContainerField<*>): T
 
-    abstract fun write(writer: BinWriter, field: Field<*>, parent: StructInstance)
+    abstract fun write(writer: BinWriter, context: ContainerField<*>)
 
-    protected open fun prepareWrite(field: Field<*>, parent: StructInstance) {
-        // default impl does nothing
+    protected open fun prepareWrite(context: ContainerField<*>) {
+        if (context[fieldName].qualifiers != null) {
+            context[fieldName].qualifiers!!.addAll(qualifiers)
+        } else {
+            context[fieldName].qualifiers = HashSet<String>(qualifiers)
+        }
     }
 
-    abstract fun matchesDef(field: Field<*>, parent: StructInstance): Boolean
+    abstract fun matchesDef(context: ContainerField<*>): Boolean
 }

@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
 
     val outStream = ByteArrayOutputStream()
     val writer = BinWriter(outStream)
-    msgDef.write(writer, instance, instance)
+    msgDef.write(writer, instance)
 
     println()
     for (b in outStream.toByteArray()) {

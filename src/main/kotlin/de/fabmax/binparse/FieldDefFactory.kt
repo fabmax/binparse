@@ -9,9 +9,8 @@ import kotlin.text.Regex
 
 abstract class FieldDefFactory {
 
-    private val decimalRegex = Regex("([0-9]*)|(0x[0-9a-fA-F]*)|(0b[01]*)")
-
     companion object {
+        private val decimalRegex = Regex("([0-9]*)|(0x[0-9a-fA-F]*)|(0b[01]*)")
         private val parserFactories = HashMap<String, FieldDefFactory>()
 
         init {
@@ -35,7 +34,7 @@ abstract class FieldDefFactory {
             parserFactories.put("select", SelectDef.Factory())
         }
 
-        fun createParser(definition: Item): FieldDef {
+        fun createParser(definition: Item): FieldDef<*> {
             try {
                 val fac = parserFactories[definition.value] ?:
                         throw IllegalArgumentException("Unknown type: " + definition.value)
@@ -59,7 +58,7 @@ abstract class FieldDefFactory {
             return parserFactories.containsKey(name)
         }
 
-        private fun addQualifiers(definition: Item, fieldDef: FieldDef) {
+        private fun addQualifiers(definition: Item, fieldDef: FieldDef<*>) {
             val qualifiers = definition.childrenMap["_qualifiers"] ?: return
 
             qualifiers.value.splitToSequence('|').forEach {
@@ -71,26 +70,26 @@ abstract class FieldDefFactory {
                 }
             }
         }
-    }
 
-    abstract fun createParser(definition: Item): FieldDef;
-
-    protected fun parseDecimal(string: String): Long? {
-        if (string.matches(decimalRegex)) {
-            if (string.startsWith("0x")) {
-                return java.lang.Long.parseLong(string.substring(2), 16);
-            } else if (string.startsWith("0b")) {
-                return java.lang.Long.parseLong(string.substring(2), 1);
+        internal fun parseDecimal(string: String): Long? {
+            if (string.matches(decimalRegex)) {
+                if (string.startsWith("0x")) {
+                    return java.lang.Long.parseLong(string.substring(2), 16);
+                } else if (string.startsWith("0b")) {
+                    return java.lang.Long.parseLong(string.substring(2), 1);
+                } else {
+                    return java.lang.Long.parseLong(string);
+                }
             } else {
-                return java.lang.Long.parseLong(string);
+                return null
             }
-        } else {
-            return null
+        }
+
+        internal fun getItem(items: Map<String, Item>, name: String): Item {
+            val item = items[name] ?: throw IllegalArgumentException("Missing attribute \"$name\"");
+            return item;
         }
     }
 
-    protected fun getItem(items: Map<String, Item>, name: String): Item {
-        val item = items[name] ?: throw IllegalArgumentException("Missing attribute \"$name\"");
-        return item;
-    }
+    abstract fun createParser(definition: Item): FieldDef<*>;
 }

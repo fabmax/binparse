@@ -1,38 +1,13 @@
 package de.fabmax.binparse
 
 import java.io.BufferedReader
-import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.util.*
 import kotlin.text.Regex
 
 /**
- * Created by max on 15.11.2015.
- */
-
-fun main(args: Array<String>) {
-    val parser = Parser.fromFile("dns-sd.sbp")
-
-    val input = ByteArrayInputStream(byteArrayOf(
-            0.toByte(), 0.toByte(), 132.toByte(), 0.toByte(), 0.toByte(), 0.toByte(), 0.toByte(), 1.toByte(),
-            0.toByte(), 0.toByte(), 0.toByte(), 0.toByte(), 13.toByte(), 49.toByte(), 57.toByte(), 50.toByte(),
-            45.toByte(), 49.toByte(), 54.toByte(), 56.toByte(), 45.toByte(), 49.toByte(), 48.toByte(), 45.toByte(),
-            55.toByte(), 50.toByte(), 5.toByte(), 108.toByte(), 111.toByte(), 99.toByte(), 97.toByte(), 108.toByte(),
-            0.toByte(), 0.toByte(), 1.toByte(), 128.toByte(), 1.toByte(), 0.toByte(), 0.toByte(), 14.toByte(),
-            16.toByte(), 0.toByte(), 4.toByte(), 192.toByte(), 168.toByte(), 10.toByte(), 72.toByte()))
-
-    val struct = parser.structs["main"]!!
-    val result = struct.parse(input)
-    println(result.toString(0))
-    //println(result["flags"])
-}
-
-/**
  * Parses stuff.
- *
- * @sample main
- *
  */
 class Parser(source: String) {
 

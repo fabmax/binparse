@@ -1,17 +1,18 @@
 package de.fabmax.binparse
 
 import java.io.InputStream
+import java.io.OutputStream
 import java.util.*
 
 /**
  * Created by max on 18.11.2015.
  */
 
-class StructDef(definition: Item) : FieldDef(definition.identifier) {
+class StructDef(definition: Item) : FieldDef<StructInstance>(definition.identifier) {
 
     val name = definition.identifier;
 
-    private val parserChain = ArrayList<FieldDef>()
+    private val parserChain = ArrayList<FieldDef<*>>()
 
     init {
         if (definition.value != "struct") {
@@ -35,66 +36,70 @@ class StructDef(definition: Item) : FieldDef(definition.identifier) {
         return result
     }
 
-    override fun parse(reader: BinReader, parent: StructInstance): StructInstance {
+    override fun parse(reader: BinReader, context: ContainerField<*>): StructInstance {
         return parse(reader)
     }
 
-    override fun write(writer: BinWriter, field: Field<*>, parent: StructInstance) {
-        val instance = asStructInstance(field)
-        prepareWrite(instance)
-        if (matchesDef(instance, false)) {
+    fun write(output: OutputStream, instance: StructInstance) {
+        writeInstance(BinWriter(output), instance)
+    }
+
+    override fun write(writer: BinWriter, context: ContainerField<*>) {
+        writeInstance(writer, context.getStruct(fieldName))
+    }
+
+    private fun writeInstance(writer: BinWriter, instance: StructInstance) {
+        prepareChildren(instance)
+        if (matchesInstance(instance, false)) {
             parserChain.forEach {
-                it.write(writer, instance[it.fieldName], instance);
+                it.write(writer, instance);
             }
         } else {
             throw IllegalArgumentException("Instance doesn't match this StructDef")
         }
     }
 
-    override fun matchesDef(field: Field<*>, parent: StructInstance): Boolean {
-        return matchesDef(asStructInstance(field))
+    override fun matchesDef(context: ContainerField<*>): Boolean {
+        return matchesInstance(context.getStruct(fieldName), true)
     }
 
-    fun matchesDef(struct: StructInstance): Boolean {
-        return matchesDef(struct, true)
+    fun matchesInstance(instance: StructInstance): Boolean {
+        return matchesInstance(instance, true)
     }
 
-    private fun matchesDef(struct: StructInstance, recursively: Boolean): Boolean {
+    private fun matchesInstance(instance: StructInstance, recursively: Boolean): Boolean {
+        var matches = true
         for (parser in parserChain) {
-            if (parser.fieldName !in struct) {
-                return false
-            } else if (recursively || parser !is StructDef){
-                return parser.matchesDef(struct[parser.fieldName], struct)
+            if (parser.fieldName !in instance) {
+                matches = false
+            } else if (parser !is StructDef) {
+                matches = matches && parser.matchesDef(instance)
+            } else if (parser is StructDef && recursively) {
+                matches = matches && parser.matchesDef(instance)
+            }
+
+            if (!matches) {
+                break
             }
         }
-        return parserChain.find { it.fieldName !in struct } == null
+        return matches
     }
 
-    override protected fun prepareWrite(field: Field<*>, parent: StructInstance) {
-        prepareWrite(asStructInstance(field))
+    override protected fun prepareWrite(context: ContainerField<*>) {
+        prepareChildren(context.getStruct(fieldName))
     }
 
-    private fun prepareWrite(instance: StructInstance) {
+    private fun prepareChildren(instance: StructInstance) {
         for (parser in parserChain) {
             // StructDefs prepare themselves within their write() method, so don't call them recursively
-            // Fields with SIZE qualifier are added automatically and might not exist yet (and don't need any
-            // preparation)
-            if (parser !is StructDef && !parser.hasQualifier(Field.QUAL_SIZE)) {
-                parser.prepareWrite(instance[parser.fieldName], instance)
+            if (parser !is StructDef) {
+                parser.prepareWrite(instance)
             }
-        }
-    }
-
-    private fun asStructInstance(field: Field<*>): StructInstance {
-        if (field is StructInstance) {
-            return field
-        } else {
-            throw IllegalArgumentException("field has to be a StructInstance (is " + field.javaClass.name + ")")
         }
     }
 
     private inner class DefFactory(val def: StructDef) : FieldDefFactory() {
-        override fun createParser(definition: Item): FieldDef {
+        override fun createParser(definition: Item): StructDef {
             if (definition.value != name) {
                 throw IllegalArgumentException("Invalid def type: " + definition.value + " != $name")
             }

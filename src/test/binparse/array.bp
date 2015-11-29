@@ -1,0 +1,7 @@
+#
+# A test message containing one primitive array.
+#
+main: struct {
+    len: u32 { _qualifiers: SIZE; }
+    array: array { type: u08; length: len; }
+}

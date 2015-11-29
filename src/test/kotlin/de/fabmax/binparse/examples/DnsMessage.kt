@@ -53,7 +53,8 @@ class DnsMessage(parsed: StructInstance, from: InetAddress) {
         val stringParts = HashMap<Int, String>()
         parsed.flat().asSequence()
                 .filter { it is StringField }
-                .forEach { stringParts.put(it.offset - 1, it.getStringValue()) }
+                .map { it as StringField }
+                .forEach { stringParts.put(it.offset - 1, it.value) }
 
         stringParts.keys.forEach { key ->
             val builder = StringBuilder()
@@ -96,10 +97,10 @@ class DnsMessage(parsed: StructInstance, from: InetAddress) {
         val name = StringBuilder()
         for (i in 0 .. labels.size - 1) {
             val item = labels.getStruct(i)
-            val type = item.getInt("type")
+            val type = item.getInt("type").intValue
             when (type) {
                 0 -> name.append(item.getString("value.text")).append('.')
-                3 -> name.append(stringMap[item.getInt("value")])
+                3 -> name.append(stringMap[item.getInt("value").intValue])
             }
         }
         return name.toString()
@@ -112,8 +113,8 @@ class DnsMessage(parsed: StructInstance, from: InetAddress) {
 
         init {
             name = getName(parsed.getArray("name"))
-            type = parsed.getInt("type")
-            clazz = parsed.getInt("class")
+            type = parsed.getInt("type").intValue
+            clazz = parsed.getInt("class").intValue
         }
 
         override fun toString(): String {
@@ -133,11 +134,11 @@ class DnsMessage(parsed: StructInstance, from: InetAddress) {
 
         init {
             name = getName(parsed.getArray("name"))
-            type = parsed.getInt("type")
-            ttl = parsed.getInt("ttl")
+            type = parsed.getInt("type").intValue
+            ttl = parsed.getInt("ttl").intValue
 
             if (type == TYPE_SRV) {
-                port = parsed.getInt("data.port")
+                port = parsed.getInt("data.port").intValue
                 target = getName(parsed.getArray("data.target"))
             } else if (type == TYPE_A) {
                 addr = "" + parsed.getInt("data.a0") + "." + parsed.getInt("data.a1") +

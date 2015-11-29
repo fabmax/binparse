@@ -7,18 +7,17 @@ import java.util.*
  */
 
 class StructInstance(structName: String, fields: HashMap<String, Field<*>> = HashMap<String, Field<*>>()) :
-        Field<HashMap<String, Field<*>>>(structName, fields), Iterable<Field<*>> by fields.values {
+        ContainerField<HashMap<String, Field<*>>>(structName, fields), Iterable<Field<*>> by fields.values {
 
-    fun put(field: Field<*>) {
-        +field
-    }
-
-    operator fun contains(key: String): Boolean {
+    override operator fun contains(key: String): Boolean {
         return value.containsKey(key)
     }
 
-    @Throws(NoSuchFieldException::class)
-    operator fun get(name: String): Field<*> {
+    override fun get(index: Int): Field<*> {
+        return value.values.find { it.index == index } ?: throw NoSuchFieldException("Index not found: $index")
+    }
+
+    override fun get(name: String): Field<*> {
         val path = name.splitToSequence('.').iterator()
         var fName = path.next()
         var field = value[fName] ?: throw NoSuchFieldException("No such field: $fName")
@@ -33,41 +32,12 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
         return field
     }
 
-    @Throws(NoSuchFieldException::class)
-    fun getArray(name: String): ArrayField {
-        return get(name) as ArrayField
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getInt(name: String): Int {
-        return getLong(name).toInt()
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getLong(name: String): Long {
-        return get(name).getIntValue()
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getString(name: String): String {
-        return get(name).getStringValue()
-    }
-
-    @Throws(NoSuchFieldException::class)
-    fun getStruct(name: String): StructInstance {
-        return get(name) as StructInstance
-    }
-
     fun flat(): Iterator<Field<*>> {
         return Flaterator(iterator())
     }
 
-    override fun hasQualifier(qualifier: String): Boolean {
-        if (qualifier != QUAL_COLLECT && super.hasQualifier(QUAL_COLLECT)) {
-            return value.values.find { it.hasQualifier(qualifier) } != null
-        } else {
-            return super.hasQualifier(qualifier)
-        }
+    override fun hasChildQualifier(qualifier: String): Boolean {
+        return value.values.find { it.hasQualifier(qualifier) } != null
     }
 
     override fun toString(): String {
@@ -124,19 +94,21 @@ class StructInstance(structName: String, fields: HashMap<String, Field<*>> = Has
         }
     }
 
-    operator fun Field<*>.unaryPlus() {
-        if (this@StructInstance.value.containsKey(name)) {
-            throw IllegalArgumentException("ParseResult already contains a field with name " + name)
+    override fun put(field: Field<*>) {
+        if (value.containsKey(field.name)) {
+            throw IllegalArgumentException("ParseResult already contains a field with name " + field.name)
         }
-        index = this@StructInstance.value.size
-        this@StructInstance.value.put(name, this)
+        field.index = value.size
+        value.put(field.name, field)
+    }
+
+    operator fun Field<*>.unaryPlus() {
+        put(this)
     }
 
     protected fun <F : Field<*>> initField(field: F, init: F.() -> Unit): F {
         field.init()
-        if (this is StructInstance) {
-            put(field)
-        }
+        put(field)
         return field
     }
 
