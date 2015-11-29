@@ -12,17 +12,17 @@ class SelectDef private constructor(fieldName: String, selector: String, choices
     private val selector = selector;
     private val choices = choices;
 
-    override fun parse(reader: BinReader, context: ContainerField<*>): Field<*> {
-        val sel = context.getInt(selector).value
+    override fun parse(reader: BinReader, parent: ContainerField<*>): Field<*> {
+        val sel = parent.getInt(selector).value
         val type = choices[sel] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
-        val field = type.parseField(reader, context)
+        val field = type.parseField(reader, parent)
         field.name = fieldName
         return field
     }
 
-    override fun prepareWrite(context: ContainerField<*>) {
-        super.prepareWrite(context)
+    override fun prepareWrite(parent: ContainerField<*>) {
+        super.prepareWrite(parent)
 //        if (selector !in parent) {
 //            // make an educated guess about the selector field
 //            for ((key, fieldDef) in choices) {
@@ -36,23 +36,23 @@ class SelectDef private constructor(fieldName: String, selector: String, choices
 //                }
 //            }
 //        }
-        val sel = context.getInt(selector).value
+        val sel = parent.getInt(selector).value
         val type = choices[sel] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
-        type.prepareWrite(context)
+        type.prepareWrite(parent)
     }
 
-    override fun write(writer: BinWriter, context: ContainerField<*>) {
-        val sel = context.getInt(selector).value
+    override fun write(writer: BinWriter, parent: ContainerField<*>) {
+        val sel = parent.getInt(selector).value
         val type = choices[sel] ?: choices[null] ?:
                 throw IllegalArgumentException("Unmapped selector value: $sel")
-        type.write(writer, context)
+        type.write(writer, parent)
     }
 
-    override fun matchesDef(context: ContainerField<*>): Boolean {
-        val sel = context.getInt(selector).value
+    override fun matchesDef(parent: ContainerField<*>): Boolean {
+        val sel = parent.getInt(selector).value
         val parser = choices[sel] ?: choices[null] ?: return false
-        return parser.matchesDef(context)
+        return parser.matchesDef(parent)
     }
 
     internal class Factory() : FieldDefFactory() {

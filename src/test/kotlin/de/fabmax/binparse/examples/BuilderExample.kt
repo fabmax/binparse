@@ -39,11 +39,10 @@ fun main(args: Array<String>) {
         array("additionals") { }
     }
 
-    println(msgDef.matchesDef(instance))
+    println("matches instance: " + msgDef.matchesInstance(instance))
 
     val outStream = ByteArrayOutputStream()
-    val writer = BinWriter(outStream)
-    msgDef.write(writer, instance)
+    msgDef.write(outStream, instance)
 
     println()
     for (b in outStream.toByteArray()) {

@@ -17,10 +17,10 @@ class StringDef private constructor(fieldName: String, encoding: Charset, length
         return "$fieldName: StringParser: encoding: $encoding, length: $length"
     }
 
-    override fun parse(reader: BinReader, context: ContainerField<*>): StringField {
+    override fun parse(reader: BinReader, parent: ContainerField<*>): StringField {
         val data = when (length.mode) {
             ArrayDef.LengthMode.FIXED -> reader.readBytes(length.intLength)
-            ArrayDef.LengthMode.BY_FIELD -> reader.readBytes(context.getInt(length.strLength).intValue)
+            ArrayDef.LengthMode.BY_FIELD -> reader.readBytes(parent.getInt(length.strLength).intValue)
             ArrayDef.LengthMode.BY_VALUE -> readNullTerminated(reader)
         }
         return StringField(fieldName, String(data, encoding))
@@ -40,24 +40,24 @@ class StringDef private constructor(fieldName: String, encoding: Charset, length
         return bytes.toByteArray()
     }
 
-    override fun prepareWrite(context: ContainerField<*>) {
-        super.prepareWrite(context)
-        val string = context.getString(fieldName)
+    override fun prepareWrite(parent: ContainerField<*>) {
+        super.prepareWrite(parent)
+        val string = parent.getString(fieldName)
         if (length.mode == ArrayDef.LengthMode.BY_FIELD) {
-            context.getInt(length.strLength).intValue = string.value.toByteArray(encoding).size
+            parent.getInt(length.strLength).intValue = string.value.toByteArray(encoding).size
         }
     }
 
-    override fun write(writer: BinWriter, context: ContainerField<*>) {
-        val string = context.getString(fieldName)
+    override fun write(writer: BinWriter, parent: ContainerField<*>) {
+        val string = parent.getString(fieldName)
         writer.writeBytes(string.value.toByteArray(encoding));
         if (length.mode == ArrayDef.LengthMode.BY_VALUE && length.termParser != null) {
             length.termParser.write(writer, ArrayDef.nullTermCtx)
         }
     }
 
-    override fun matchesDef(context: ContainerField<*>): Boolean {
-        return context[fieldName] is StringField
+    override fun matchesDef(parent: ContainerField<*>): Boolean {
+        return parent[fieldName] is StringField
     }
 
     internal class Factory(encoding: Charset?) : FieldDefFactory() {

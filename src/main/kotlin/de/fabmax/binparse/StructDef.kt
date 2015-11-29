@@ -36,7 +36,7 @@ class StructDef(definition: Item) : FieldDef<StructInstance>(definition.identifi
         return result
     }
 
-    override fun parse(reader: BinReader, context: ContainerField<*>): StructInstance {
+    override fun parse(reader: BinReader, parent: ContainerField<*>): StructInstance {
         return parse(reader)
     }
 
@@ -44,23 +44,19 @@ class StructDef(definition: Item) : FieldDef<StructInstance>(definition.identifi
         writeInstance(BinWriter(output), instance)
     }
 
-    override fun write(writer: BinWriter, context: ContainerField<*>) {
-        writeInstance(writer, context.getStruct(fieldName))
+    override fun write(writer: BinWriter, parent: ContainerField<*>) {
+        writeInstance(writer, parent.getStruct(fieldName))
     }
 
     private fun writeInstance(writer: BinWriter, instance: StructInstance) {
         prepareChildren(instance)
-        if (matchesInstance(instance, false)) {
-            parserChain.forEach {
-                it.write(writer, instance);
-            }
-        } else {
-            throw IllegalArgumentException("Instance doesn't match this StructDef")
+        parserChain.forEach {
+            it.write(writer, instance);
         }
     }
 
-    override fun matchesDef(context: ContainerField<*>): Boolean {
-        return matchesInstance(context.getStruct(fieldName), true)
+    override fun matchesDef(parent: ContainerField<*>): Boolean {
+        return matchesInstance(parent.getStruct(fieldName), true)
     }
 
     fun matchesInstance(instance: StructInstance): Boolean {
@@ -70,9 +66,7 @@ class StructDef(definition: Item) : FieldDef<StructInstance>(definition.identifi
     private fun matchesInstance(instance: StructInstance, recursively: Boolean): Boolean {
         var matches = true
         for (parser in parserChain) {
-            if (parser.fieldName !in instance) {
-                matches = false
-            } else if (parser !is StructDef) {
+            if (parser !is StructDef) {
                 matches = matches && parser.matchesDef(instance)
             } else if (parser is StructDef && recursively) {
                 matches = matches && parser.matchesDef(instance)
@@ -85,8 +79,8 @@ class StructDef(definition: Item) : FieldDef<StructInstance>(definition.identifi
         return matches
     }
 
-    override protected fun prepareWrite(context: ContainerField<*>) {
-        prepareChildren(context.getStruct(fieldName))
+    override protected fun prepareWrite(parent: ContainerField<*>) {
+        prepareChildren(parent.getStruct(fieldName))
     }
 
     private fun prepareChildren(instance: StructInstance) {

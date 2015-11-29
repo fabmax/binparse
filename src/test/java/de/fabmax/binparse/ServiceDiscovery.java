@@ -7,6 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by max on 15.11.2015.
@@ -89,73 +92,59 @@ public class ServiceDiscovery {
 
         Parser parser = Parser.Companion.fromFile("src/test/binparse/dns.bp");
         StructDef main = parser.getStructs().get("main");
-
-        /*
-        ParseResult result = null;
-        for (int i = 0; i < 10000; i++) {
-            ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-            result = main.parse(bin);
-        }
-
-        long t = System.nanoTime();
-        for (int i = 0; i < 100; i++) {
-            ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-            result = main.parse(bin);
-        }
-        t = System.nanoTime() - t;
-        System.out.printf("parsing took %.3f ms\n", t / 100e6);*/
-
-
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
         StructInstance result = main.parse(bin);
-        System.out.println(result.toString(8, false));
+        //System.out.println(result.toString(0, false));
         new DnsMessage(result, InetAddress.getLocalHost());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         main.write(out, result);
-
         byte[] data = out.toByteArray();
+        boolean equal = true;
         for (int i = 0; i < data.length; i++) {
             System.out.printf("%02x ", data[i]);
-
             if (data[i] != buf[i]) {
-                System.out.println("kaputt");
+                equal = false;
+                break;
             }
-
             if ((i+1) % 8 == 0) {
                 System.out.println();
             }
         }
+        System.out.println("\nEncoding success: " + equal);
 
-        /*Iterable<Field> flaterator = result::flat;
-        Stream<Field> fields = StreamSupport.stream(flaterator.spliterator(), false);
-        fields.filter(it -> it instanceof StringField).forEach(it -> System.out.println(it.getOffset() + ": " + it.getStringValue()));*/
+        for (int i = 0; i < 10000; i++) {
+            bin = new ByteArrayInputStream(buf);
+            result = main.parse(bin);
+        }
+        long t = System.nanoTime();
+        for (int i = 0; i < 500; i++) {
+            bin = new ByteArrayInputStream(buf);
+            result = main.parse(bin);
+        }
+        t = System.nanoTime() - t;
+        System.out.printf("decoding took %.3f ms\n", t / 500e6);
 
 
-        //System.out.println(result.toString(0, true));
-        /*ArrayField answers = result.getArray("answers");
-        for (int i = 0; i < answers.getLength(); i++) {
-            ParseResult ans = answers.getSruct(i);
-            if (ans.getInt("type") == 33) {
-                ParseResult service = ans.getStruct("data");
-                int port = service.getInt("port");
-                String ip = service.getArray("target").getSruct(0).getString("value.text");
-                System.out.println("found a service: " + ip + ":" + port);
+        for (int i = 0; i < 10000; i++) {
+            out = new ByteArrayOutputStream();
+            main.write(out, result);
+        }
+        t = System.nanoTime();
+        for (int i = 0; i < 500; i++) {
+            out = new ByteArrayOutputStream();
+            main.write(out, result);
+        }
+        t = System.nanoTime() - t;
+        System.out.printf("encoding took %.3f ms\n", t / 500e6);
+
+
+        Iterator<Field<?>> flaterator = result.flat();
+        while (flaterator.hasNext()) {
+            Field<?> f = flaterator.next();
+            if (!(f instanceof ContainerField<?>)) {
+                System.out.println(f.getOffset() + ": " + f.getName() + ": " + f.toString());
             }
-        }*/
-    }
-
-    private static void testSimple() throws Exception {
-        byte[] buf = new byte[] { (byte) 0xc0, 8 };
-
-        Parser parser = Parser.Companion.fromFile("test.sbp");
-        StructDef main = parser.getStructs().get("main");
-        ByteArrayInputStream bin = new ByteArrayInputStream(buf);
-        StructInstance result = main.parse(bin);
-
-        Field value = result.get("val");
-        System.out.println(value.getClass());
-        System.out.println(value.getQualifiers());
-        System.out.println(value.hasQualifier("COLLECT"));
+        }
     }
 }

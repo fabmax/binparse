@@ -41,36 +41,6 @@ abstract class Field<T>(name: String, initVal: T) {
         qualifiers!!.add(qualifier)
     }
 
-    /**
-     * Return the int value of a field. Because in binparse ints can have arbitrary sizes between 1 and 64 bits this
-     * method returns a Long. For non-int fields this method throws an UnsupportedOperationException.
-     */
-    /*open fun getIntValue(): Long {
-        val v = value
-        if (v is Long) {
-            return v
-        } else if (v is Int) {
-            return v.toLong()
-        } else {
-            throw UnsupportedOperationException()
-        }
-    }
-
-    open fun getFloatValue(): Double {
-        val v = value
-        if (v is Double) {
-            return v
-        } else if (v is Float) {
-            return v.toDouble()
-        } else {
-            throw UnsupportedOperationException()
-        }
-    }
-
-    open fun getStringValue(): String {
-        return value.toString()
-    }*/
-
     open fun set(value: T) {
         this.value = value
     }

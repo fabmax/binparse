@@ -11,9 +11,9 @@ abstract class FieldDef<T : Field<*>>(fieldName: String) {
     var fieldName = fieldName
     val qualifiers = HashSet<String>()
 
-    fun parseField(reader: BinReader, context: ContainerField<*>): T {
+    fun parseField(reader: BinReader, parent: ContainerField<*>): T {
         val offset = reader.pos
-        val field = parse(reader, context)
+        val field = parse(reader, parent)
         field.offset = offset
         if (!qualifiers.isEmpty()) {
             field.qualifiers = HashSet<String>(qualifiers)
@@ -25,17 +25,17 @@ abstract class FieldDef<T : Field<*>>(fieldName: String) {
         return qualifiers.contains(qualifier)
     }
 
-    protected abstract fun parse(reader: BinReader, context: ContainerField<*>): T
+    protected abstract fun parse(reader: BinReader, parent: ContainerField<*>): T
 
-    abstract fun write(writer: BinWriter, context: ContainerField<*>)
+    abstract fun write(writer: BinWriter, parent: ContainerField<*>)
 
-    protected open fun prepareWrite(context: ContainerField<*>) {
-        if (context[fieldName].qualifiers != null) {
-            context[fieldName].qualifiers!!.addAll(qualifiers)
+    protected open fun prepareWrite(parent: ContainerField<*>) {
+        if (parent[fieldName].qualifiers != null) {
+            parent[fieldName].qualifiers!!.addAll(qualifiers)
         } else {
-            context[fieldName].qualifiers = HashSet<String>(qualifiers)
+            parent[fieldName].qualifiers = HashSet<String>(qualifiers)
         }
     }
 
-    abstract fun matchesDef(context: ContainerField<*>): Boolean
+    abstract fun matchesDef(parent: ContainerField<*>): Boolean
 }

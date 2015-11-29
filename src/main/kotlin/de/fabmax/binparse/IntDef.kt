@@ -14,7 +14,7 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness) : Fiel
     val bits = size
     val signedness = signedness
 
-    override fun parse(reader: BinReader, context: ContainerField<*>): IntField {
+    override fun parse(reader: BinReader, parent: ContainerField<*>): IntField {
         var value = reader.readBits(bits)
         if (signedness == Signedness.SIGNED && value >= (1 shl (bits - 1))) {
             value -= (1 shl bits)
@@ -22,20 +22,20 @@ class IntDef(fieldName: String, size: Int, signedness: IntDef.Signedness) : Fiel
         return IntField(fieldName, value)
     }
 
-    override fun prepareWrite(context: ContainerField<*>) {
-        if (hasQualifier(Field.QUAL_SIZE) && fieldName !in context) {
-            context.put(IntField(fieldName, 0))
+    override fun prepareWrite(parent: ContainerField<*>) {
+        if (hasQualifier(Field.QUAL_SIZE) && fieldName !in parent) {
+            parent.put(IntField(fieldName, 0))
         }
-        super.prepareWrite(context)
+        super.prepareWrite(parent)
     }
 
-    override fun write(writer: BinWriter, context: ContainerField<*>) {
-        writer.writeBits(bits, context.getInt(fieldName).value)
+    override fun write(writer: BinWriter, parent: ContainerField<*>) {
+        writer.writeBits(bits, parent.getInt(fieldName).value)
     }
 
-    override fun matchesDef(context: ContainerField<*>): Boolean {
+    override fun matchesDef(parent: ContainerField<*>): Boolean {
         // IntFields with SIZE qualifier are added automatically before write
-        return hasQualifier(Field.QUAL_SIZE) || context[fieldName] is IntField
+        return hasQualifier(Field.QUAL_SIZE) || parent[fieldName] is IntField
     }
 
     override fun toString(): String {

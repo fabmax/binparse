@@ -33,7 +33,7 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
     private val type = type
     private val length = length
 
-    protected override fun parse(reader: BinReader, context: ContainerField<*>): ArrayField {
+    protected override fun parse(reader: BinReader, parent: ContainerField<*>): ArrayField {
         val array = ArrayField(fieldName)
 
         if (length.mode == LengthMode.BY_VALUE) {
@@ -43,18 +43,18 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
                     break
                 }
                 reader.reset()
-                if (parseItem(array, reader, context)) {
+                if (parseItem(array, reader, parent)) {
                     break
                 }
             }
         } else {
             val length = when (length.mode) {
                 LengthMode.FIXED -> length.intLength
-                LengthMode.BY_FIELD -> context.getInt(length.strLength).intValue
+                LengthMode.BY_FIELD -> parent.getInt(length.strLength).intValue
                 else -> 0
             }
             for (i in 1..length) {
-                if (parseItem(array, reader, context)) {
+                if (parseItem(array, reader, parent)) {
                     break
                 }
             }
@@ -62,11 +62,11 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
         return array
     }
 
-    override fun prepareWrite(context: ContainerField<*>) {
-        super.prepareWrite(context)
-        val array = context.getArray(fieldName);
+    override fun prepareWrite(parent: ContainerField<*>) {
+        super.prepareWrite(parent)
+        val array = parent.getArray(fieldName);
         if (length.mode == LengthMode.BY_FIELD) {
-            context.getInt(length.strLength).intValue = array.size
+            parent.getInt(length.strLength).intValue = array.size
         }
         for (i in 0 .. array.size - 1) {
             type.fieldName = i.toString()
@@ -74,8 +74,8 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
         }
     }
 
-    override fun write(writer: BinWriter, context: ContainerField<*>) {
-        val array = context.getArray(fieldName);
+    override fun write(writer: BinWriter, parent: ContainerField<*>) {
+        val array = parent.getArray(fieldName);
         var isBreak = false;
         for (i in 0 .. array.size - 1) {
             type.fieldName = i.toString()
@@ -90,8 +90,8 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
         }
     }
 
-    override fun matchesDef(context: ContainerField<*>): Boolean {
-        val array = context[fieldName]
+    override fun matchesDef(parent: ContainerField<*>): Boolean {
+        val array = parent[fieldName]
         if (array is ArrayField) {
             for (i in 0 .. array.size - 1) {
                 type.fieldName = i.toString()
@@ -116,7 +116,7 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
         return "$fieldName: ArrayParser: type: $type, length-mode: $length"
     }
 
-    internal open class Factory() : FieldDefFactory() {
+    internal class Factory() : FieldDefFactory() {
         companion object {
             internal fun parseLength(definition: Item): Length {
                 val lengthItem = FieldDefFactory.getItem(definition.childrenMap, "length")
@@ -150,88 +150,3 @@ class ArrayDef private constructor(fieldName: String, type: FieldDef<*>, length:
     }
 }
 
-class ArrayField(name: String, items: ArrayList<Field<*>> = ArrayList<Field<*>>()) :
-        ContainerField<ArrayList<Field<*>>>(name, items), Iterable<Field<*>> by items {
-    val size: Int
-        get() = value.size
-
-    override operator fun get(index: Int): Field<*> {
-        return value[index]
-    }
-
-    override operator fun get(name: String): Field<*> {
-        return get(name.toInt())
-    }
-
-    override operator fun contains(key: String): Boolean {
-        val idx = key.toInt()
-        return idx >= 0 && idx < value.size
-    }
-
-    override fun put(field: Field<*>) {
-        value.add(field)
-    }
-
-    override fun hasChildQualifier(qualifier: String): Boolean {
-        return value.find { it.hasQualifier(qualifier) } != null
-    }
-
-    override fun toString(indent: Int, withFieldName: Boolean): String {
-        val buf = StringBuffer()
-        for (i in 1 .. indent) {
-            buf.append(' ')
-        }
-        val ind = buf.toString()
-
-        if (withFieldName) {
-            buf.append(name).append(" = ")
-        }
-
-        if (value.isEmpty()) {
-            buf.append("[]")
-        } else {
-            buf.append("[\n")
-            value.forEach { buf.append(it.toString(indent + 2, false)).append(",\n") }
-            buf.append(ind).append("]")
-        }
-        return buf.toString()
-    }
-
-    operator fun Array<Int>.unaryPlus() {
-        value.clear()
-        var i = 0
-        for (int in this) {
-            value.add(IntField("[{$i++}]", int.toLong()))
-        }
-    }
-
-    operator fun Array<Long>.unaryPlus() {
-        value.clear()
-        var i = 0
-        for (long in this) {
-            value.add(IntField("[{$i++}]", long))
-        }
-    }
-
-    operator fun Array<String>.unaryPlus() {
-        value.clear()
-        var i = 0
-        for (str in this) {
-            value.add(StringField("[{$i++}]", str))
-        }
-    }
-
-    operator fun Array<StructInstance>.unaryPlus() {
-        value.clear()
-        for (struct in this) {
-            value.add(struct)
-        }
-    }
-
-    operator fun Array<Field<*>>.unaryPlus() {
-        value.clear()
-        for (field in this) {
-            value.add(field)
-        }
-    }
-}
